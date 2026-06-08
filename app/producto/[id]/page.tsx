@@ -40,8 +40,18 @@ export default function ProductDetailPage() {
     async function loadProduct() {
       if (!productId) return;
       try {
+        // Get or create unique visitor ID
+        let visitorId = user?.uid;
+        if (!visitorId && typeof window !== "undefined") {
+          visitorId = localStorage.getItem("mesira_visitor_id") || "";
+          if (!visitorId) {
+            visitorId = "vis_" + Math.random().toString(36).substring(2, 15);
+            localStorage.setItem("mesira_visitor_id", visitorId);
+          }
+        }
+
         // Increment views count in DB
-        await incrementProductViews(productId);
+        await incrementProductViews(productId, visitorId || "anon");
         const data = await getProductById(productId);
         setProduct(data);
       } catch (err) {
@@ -52,7 +62,7 @@ export default function ProductDetailPage() {
       }
     }
     loadProduct();
-  }, [productId]);
+  }, [productId, user]);
 
   // Check if user has already revealed contact info in this session
   useEffect(() => {
@@ -228,7 +238,7 @@ export default function ProductDetailPage() {
                 <span className="font-semibold text-ml-blue">{getConditionText(product.condition)}</span>
                 <span className="text-gray-300">•</span>
                 <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[10px] font-bold">
-                  {product.viewsCount || 0} visitas
+                  {product.viewsCount || 0} {product.viewsCount === 1 ? "visita" : "visitas"} de {product.viewedUserIds?.length || 0} {product.viewedUserIds?.length === 1 ? "usuario" : "usuarios"}
                 </span>
               </div>
 

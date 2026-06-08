@@ -644,7 +644,7 @@ function MiCuentaContent() {
                           </span>
 
                           <span className="text-[9px] font-bold bg-blue-50 text-ml-blue px-2 py-0.5 rounded border border-blue-200">
-                            {prod.viewsCount || 0} visitas
+                            {prod.viewsCount || 0} {prod.viewsCount === 1 ? "visita" : "visitas"} ({prod.viewedUserIds?.length || 0} {prod.viewedUserIds?.length === 1 ? "usuario" : "usuarios"})
                           </span>
                         </div>
                       </div>

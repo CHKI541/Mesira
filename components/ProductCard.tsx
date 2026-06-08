@@ -86,6 +86,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             <Clock size={13} className="text-gray-300 shrink-0" />
             <span>Publicado {publishedHour}</span>
           </div>
+
+          {/* Remaining contacts/intentos */}
+          <div className="inline-flex text-[10px] font-bold text-[#00a650] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 mt-1 flex items-center">
+            {((product.maxContacts || 3) - product.contactCount) === 1 
+              ? "Queda 1 contacto" 
+              : `Quedan ${(product.maxContacts || 3) - product.contactCount} contactos`}
+          </div>
         </div>
       </div>
     </Link>

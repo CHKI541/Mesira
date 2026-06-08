@@ -35,6 +35,7 @@ export interface Product {
   maxContacts?: number;
   contactedUserIds?: string[];
   deactivatedAt?: any;
+  viewedUserIds?: string[];
 }
 
 // User Profile Type definition
@@ -449,7 +450,8 @@ export const createProduct = async (productData: Omit<Product, "id" | "createdAt
     isActive: true,
     contactCount: 0,
     viewsCount: 0,
-    contactedUserIds: []
+    contactedUserIds: [],
+    viewedUserIds: []
   };
 
   if (isFirebaseConfigured) {
@@ -535,14 +537,24 @@ export const updateProductContact = async (id: string, userId: string): Promise<
   }
 };
 
-// 5b. Increment Product Views
-export const incrementProductViews = async (id: string): Promise<void> => {
+// 5b. Increment Product Views (Tracks unique visitors)
+export const incrementProductViews = async (id: string, viewerId: string): Promise<void> => {
   if (isFirebaseConfigured) {
     try {
       const docRef = doc(db, "products", id);
-      await updateDoc(docRef, {
-        viewsCount: increment(1)
-      });
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data() as Product;
+        const viewedUserIds = data.viewedUserIds || [];
+        const updatedUserIds = viewedUserIds.includes(viewerId)
+          ? viewedUserIds
+          : [...viewedUserIds, viewerId];
+        
+        await updateDoc(docRef, {
+          viewsCount: increment(1),
+          viewedUserIds: updatedUserIds
+        });
+      }
     } catch (e) {
       console.warn("Failed to increment views:", e);
     }
@@ -550,7 +562,14 @@ export const incrementProductViews = async (id: string): Promise<void> => {
     const products = getMockProducts();
     const index = products.findIndex(p => p.id === id);
     if (index !== -1) {
-      products[index].viewsCount = (products[index].viewsCount || 0) + 1;
+      const product = products[index];
+      const viewedUserIds = product.viewedUserIds || [];
+      const updatedUserIds = viewedUserIds.includes(viewerId)
+        ? viewedUserIds
+        : [...viewedUserIds, viewerId];
+
+      products[index].viewsCount = (product.viewsCount || 0) + 1;
+      products[index].viewedUserIds = updatedUserIds;
       saveMockProducts(products);
     }
   }
