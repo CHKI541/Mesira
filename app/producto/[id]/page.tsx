@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { getProductById, updateProductContact, Product } from "@/lib/db";
+import { getProductById, updateProductContact, incrementProductViews, Product } from "@/lib/db";
 import { useAuth } from "@/context/AuthContext";
 import { Header } from "@/components/Header";
 import { AuthModal } from "@/components/AuthModal";
@@ -40,6 +40,8 @@ export default function ProductDetailPage() {
     async function loadProduct() {
       if (!productId) return;
       try {
+        // Increment views count in DB
+        await incrementProductViews(productId);
         const data = await getProductById(productId);
         setProduct(data);
       } catch (err) {
@@ -224,6 +226,10 @@ export default function ProductDetailPage() {
                 <span>Publicado el {formatFullDate(product.createdAt)}</span>
                 <span className="text-gray-300">•</span>
                 <span className="font-semibold text-ml-blue">{getConditionText(product.condition)}</span>
+                <span className="text-gray-300">•</span>
+                <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[10px] font-bold">
+                  {product.viewsCount || 0} visitas
+                </span>
               </div>
 
               {/* Title */}

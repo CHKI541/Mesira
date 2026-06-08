@@ -36,18 +36,18 @@ export default function AyudaPage() {
       icon: <ShieldAlert className="text-red-500" size={18} />
     },
     {
-      q: "¿Qué sucede después de 48 horas de publicado?",
-      a: "Para evitar que la plataforma acumule productos que ya fueron regalados o que los dueños ya no tengan disponibles, todas las publicaciones activas expiran automáticamente a las 48 horas de su creación, desapareciendo del listado principal.",
+      q: "¿Cuándo expiran las publicaciones?",
+      a: "Para mantener el feed dinámico, las publicaciones activas se muestran en el listado principal hasta por 60 días. Sin embargo, las publicaciones desactivadas (las que ya consiguieron el límite de 3 contactos) se borran por completo tras 48 horas.",
       icon: <Clock className="text-amber-500" size={18} />
     },
     {
-      q: "Si mi producto se desactivó o expiró, ¿lo perdí?",
-      a: "No, en absoluto. En la sección 'Mi Cuenta' tendrás acceso a todas tus publicaciones. Si por algún motivo los contactos no retiraron el producto, podés presionar 'Volver a activar'. Esto restablecerá la publicación con 0 contactos y un nuevo lapso de 48 horas. También podés elegir 'Eliminar' si ya lo entregaste.",
+      q: "Si mi producto se desactivó, ¿lo perdí?",
+      a: "No, mientras la publicación desactivada tenga menos de 48 horas, tendrás acceso a ella en 'Mi Cuenta'. Si la persona no retiró el producto, podés presionar 'Volver a activar' para restablecerla con 0 contactos y un período activo. Pasadas las 48 horas desactivada, se eliminará permanentemente.",
       icon: <RotateCcw className="text-ml-blue" size={18} />
     },
     {
-      q: "¿Por qué es obligatorio verificar un celular argentino?",
-      a: "La verificación por SMS (+54 9) es un filtro de seguridad indispensable. Asegura que los usuarios sean personas reales dentro del país, desalienta las cuentas duplicadas creadas para acaparar productos gratis y evita que bots automatizados de spam capturen los teléfonos de los donantes.",
+      q: "¿Por qué es obligatorio registrar un celular argentino?",
+      a: "Solicitamos tu celular para que los interesados puedan enviarte un mensaje directo a WhatsApp. Al ser un número argentino (+54 9), garantizamos que la comunidad de donación sea local y real para coordinar las entregas.",
       icon: <Smartphone className="text-purple-500" size={18} />
     },
     {
@@ -90,9 +90,9 @@ export default function AyudaPage() {
           <div className="p-5 flex gap-4">
             <div className="shrink-0 font-black text-xl text-ml-blue bg-blue-50 w-8 h-8 rounded-full flex items-center justify-center">1</div>
             <div>
-              <h3 className="text-sm font-bold text-ml-dark">Iniciás sesión y verificás tu celular</h3>
+              <h3 className="text-sm font-bold text-ml-dark">Iniciás sesión y completás tus datos</h3>
               <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                Ingresás de forma segura con tu cuenta de Google. Para poder publicar o contactar, te solicitamos completar tu Nombre, Apellido y tu número celular argentino. Te llegará un código SMS para validarlo al instante.
+                Ingresás de forma segura con tu cuenta de Google. Completás tu Nombre, Apellido y celular de Argentina. Tu cuenta se activará al instante para poder usar la plataforma.
               </p>
             </div>
           </div>
@@ -123,9 +123,9 @@ export default function AyudaPage() {
           <div className="p-5 flex gap-4">
             <div className="shrink-0 font-black text-xl text-ml-blue bg-blue-50 w-8 h-8 rounded-full flex items-center justify-center">4</div>
             <div>
-              <h3 className="text-sm font-bold text-ml-dark">Expiración a las 48 horas</h3>
+              <h3 className="text-sm font-bold text-ml-dark">Vigencia y borrado automático</h3>
               <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                Toda publicación activa desaparecerá del listado principal después de 48 horas de haber sido creada. Esto garantiza que todos los productos que la gente ve sigan vigentes.
+                Las publicaciones activas duran hasta 60 días para dar tiempo a que encuentren interesados. Pero si la publicación se desactiva (consigue 3 contactos), desaparecerá definitivamente tras 48 horas.
               </p>
             </div>
           </div>
@@ -160,15 +160,8 @@ export default function AyudaPage() {
           })}
         </div>
 
-        {/* Help footer */}
-        <div className="text-center mt-8">
-          <p className="text-xs text-gray-400">
-            ¿Tenés alguna otra duda o consulta sobre Mesira?
-          </p>
-          <a href="mailto:soporte@mesira.com.ar" className="text-xs text-ml-blue font-bold hover:underline mt-1 inline-block">
-            soporte@mesira.com.ar
-          </a>
-        </div>
+        {/* Spacer */}
+        <div className="h-8"></div>
       </main>
 
       {/* Auth Modals */}

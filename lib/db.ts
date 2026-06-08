@@ -10,7 +10,8 @@ import {
   query, 
   where, 
   orderBy, 
-  Timestamp 
+  Timestamp,
+  increment
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage, isFirebaseConfigured } from "./firebase";
@@ -27,6 +28,7 @@ export interface Product {
   createdAt: any; // Date, Timestamp or number
   isActive: boolean;
   contactCount: number;
+  viewsCount: number;
   sellerId: string;
   sellerName: string;
   sellerPhone: string;
@@ -64,6 +66,7 @@ const getInitialMockProducts = (): Product[] => {
       createdAt: now - 2 * oneHour,
       isActive: true,
       contactCount: 1,
+      viewsCount: 14,
       sellerId: "mock-user-1",
       sellerName: "Carlos Gómez",
       sellerPhone: "+5491133333333"
@@ -78,6 +81,7 @@ const getInitialMockProducts = (): Product[] => {
       createdAt: now - 5 * oneHour,
       isActive: true,
       contactCount: 0,
+      viewsCount: 8,
       sellerId: "mock-user-2",
       sellerName: "María Del Carmen",
       sellerPhone: "+5491144444444"
@@ -92,6 +96,7 @@ const getInitialMockProducts = (): Product[] => {
       createdAt: now - oneDay - 1 * oneHour,
       isActive: true,
       contactCount: 2,
+      viewsCount: 25,
       sellerId: "mock-user-3",
       sellerName: "Lucas Pérez",
       sellerPhone: "+5491155555555"
@@ -106,6 +111,7 @@ const getInitialMockProducts = (): Product[] => {
       createdAt: now - oneDay - 4 * oneHour,
       isActive: true,
       contactCount: 0,
+      viewsCount: 4,
       sellerId: "mock-user-1",
       sellerName: "Carlos Gómez",
       sellerPhone: "+5491133333333"
@@ -120,6 +126,7 @@ const getInitialMockProducts = (): Product[] => {
       createdAt: now - oneDay - 8 * oneHour,
       isActive: true,
       contactCount: 0,
+      viewsCount: 19,
       sellerId: "mock-user-4",
       sellerName: "Eduardo Alvarez",
       sellerPhone: "+5491166666666"
@@ -252,7 +259,8 @@ export interface FilterOptions {
 }
 
 export const getProducts = async (filters?: FilterOptions): Promise<Product[]> => {
-  const cutoffTimeMs = Date.now() - 48 * 60 * 60 * 1000;
+  // Active publications remain up to 60 days in the feed
+  const cutoffTimeMs = Date.now() - 60 * 24 * 60 * 60 * 1000;
 
   if (isFirebaseConfigured) {
     const productsRef = collection(db, "products");
@@ -372,6 +380,8 @@ export const getProductById = async (id: string): Promise<Product | null> => {
 };
 
 export const getSellerProducts = async (sellerId: string): Promise<Product[]> => {
+  const fortyEightHoursAgo = Date.now() - 48 * 60 * 60 * 1000;
+
   if (isFirebaseConfigured) {
     const q = query(
       collection(db, "products"),
@@ -379,7 +389,7 @@ export const getSellerProducts = async (sellerId: string): Promise<Product[]> =>
       orderBy("createdAt", "desc")
     );
     const querySnapshot = await getDocs(q);
-    const results: Product[] = [];
+    let results: Product[] = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
       results.push({
@@ -388,27 +398,50 @@ export const getSellerProducts = async (sellerId: string): Promise<Product[]> =>
         createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : data.createdAt
       } as Product);
     });
+
+    // Filter out deactivated products older than 48 hours
+    results = results.filter(p => {
+      const isDeactivated = !p.isActive || p.contactCount >= 3;
+      if (isDeactivated) {
+        const time = p.createdAt instanceof Date ? p.createdAt.getTime() : new Date(p.createdAt).getTime();
+        return time >= fortyEightHoursAgo;
+      }
+      return true;
+    });
+
     return results;
   } else {
     const products = getMockProducts();
-    const results = products.filter(p => p.sellerId === sellerId);
+    let results = products.filter(p => p.sellerId === sellerId);
     results.sort((a, b) => {
       const timeA = typeof a.createdAt === "number" ? a.createdAt : new Date(a.createdAt).getTime();
       const timeB = typeof b.createdAt === "number" ? b.createdAt : new Date(b.createdAt).getTime();
       return timeB - timeA;
     });
+
+    // Filter out deactivated products older than 48 hours
+    results = results.filter(p => {
+      const isDeactivated = !p.isActive || p.contactCount >= 3;
+      if (isDeactivated) {
+        const time = typeof p.createdAt === "number" ? p.createdAt : new Date(p.createdAt).getTime();
+        return time >= fortyEightHoursAgo;
+      }
+      return true;
+    });
+
     return results;
   }
 };
 
 // 4. Product Creation
-export const createProduct = async (productData: Omit<Product, "id" | "createdAt" | "isActive" | "contactCount">): Promise<Product> => {
+export const createProduct = async (productData: Omit<Product, "id" | "createdAt" | "isActive" | "contactCount" | "viewsCount">): Promise<Product> => {
   const createdAt = new Date();
   const newProduct = {
     ...productData,
     createdAt: isFirebaseConfigured ? createdAt : createdAt.getTime(),
     isActive: true,
-    contactCount: 0
+    contactCount: 0,
+    viewsCount: 0
   };
 
   if (isFirebaseConfigured) {
@@ -460,6 +493,27 @@ export const updateProductContact = async (id: string): Promise<{ contactCount: 
 
     saveMockProducts(products);
     return { contactCount: newCount, isActive };
+  }
+};
+
+// 5b. Increment Product Views
+export const incrementProductViews = async (id: string): Promise<void> => {
+  if (isFirebaseConfigured) {
+    try {
+      const docRef = doc(db, "products", id);
+      await updateDoc(docRef, {
+        viewsCount: increment(1)
+      });
+    } catch (e) {
+      console.warn("Failed to increment views:", e);
+    }
+  } else {
+    const products = getMockProducts();
+    const index = products.findIndex(p => p.id === id);
+    if (index !== -1) {
+      products[index].viewsCount = (products[index].viewsCount || 0) + 1;
+      saveMockProducts(products);
+    }
   }
 };
 

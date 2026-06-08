@@ -575,8 +575,11 @@ function MiCuentaContent() {
               {myProducts.map(prod => {
                 const createdTime = typeof prod.createdAt === "number" ? prod.createdAt : new Date(prod.createdAt).getTime();
                 const ageHours = (Date.now() - createdTime) / (60 * 60 * 1000);
-                const isPast48 = ageHours > 48;
-                const isDeactivated = !prod.isActive || isPast48;
+                
+                const isExpiredActive = prod.isActive && prod.contactCount < 3 && ageHours > 60 * 24;
+                const isExpiredDeactivated = (!prod.isActive || prod.contactCount >= 3) && ageHours > 48;
+                const isDeactivated = !prod.isActive || prod.contactCount >= 3 || isExpiredActive || isExpiredDeactivated;
+                
                 const neighborhoodLabel = prod.neighborhood === "Otro" ? prod.customNeighborhood : prod.neighborhood;
 
                 return (
@@ -595,19 +598,23 @@ function MiCuentaContent() {
                           Barrio: {neighborhoodLabel} • Creado el {new Date(createdTime).toLocaleDateString()}
                         </p>
                         
-                        <div className="flex items-center gap-2 mt-2">
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
                           {isDeactivated ? (
-                            <span className="text-[9px] font-bold bg-red-50 text-red-600 px-2 py-0.5 rounded border border-red-150 uppercase tracking-wide">
-                              {isPast48 ? "Expirado (48 hs)" : "Deactivado (3 contactos)"}
+                            <span className="text-[9px] font-bold bg-red-50 text-red-600 px-2 py-0.5 rounded border border-red-200 uppercase tracking-wide">
+                              {isExpiredActive ? "Expirado (60 días)" : isExpiredDeactivated ? "Expirado (48 hs)" : "Desactivado"}
                             </span>
                           ) : (
-                            <span className="text-[9px] font-bold bg-green-50 text-ml-green px-2 py-0.5 rounded border border-green-150 uppercase tracking-wide">
+                            <span className="text-[9px] font-bold bg-green-50 text-ml-green px-2 py-0.5 rounded border border-green-200 uppercase tracking-wide">
                               Activo
                             </span>
                           )}
                           
                           <span className="text-[9px] font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded border border-gray-200">
                             {prod.contactCount} / 3 contactos
+                          </span>
+
+                          <span className="text-[9px] font-bold bg-blue-50 text-ml-blue px-2 py-0.5 rounded border border-blue-200">
+                            {prod.viewsCount || 0} visitas
                           </span>
                         </div>
                       </div>
