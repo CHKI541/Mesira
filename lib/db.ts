@@ -238,24 +238,10 @@ const compressImage = async (file: File): Promise<string> => {
   });
 };
 
-// 2. Image Upload (uploads to storage or falls back to Base64 in Firestore if Storage isn't enabled)
+// 2. Image Upload (directly returns compressed Base64 to save in Firestore, bypassing Firebase Storage completely to avoid timeouts)
 export const uploadProductImage = async (file: File): Promise<string> => {
-  // Always prepare compressed Base64 representation
   const compressedBase64 = await compressImage(file);
-
-  if (isFirebaseConfigured && storage) {
-    try {
-      const fileId = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
-      const storageRef = ref(storage, `products/${fileId}`);
-      const snapshot = await uploadBytes(storageRef, file);
-      return await getDownloadURL(snapshot.ref);
-    } catch (error) {
-      console.warn("Storage upload failed or not enabled. Saving image as Base64 text in Firestore:", error);
-      return compressedBase64;
-    }
-  } else {
-    return compressedBase64;
-  }
+  return compressedBase64;
 };
 
 // 3. Products Retrieval with sorting & filtering
