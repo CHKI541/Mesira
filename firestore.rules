@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // User profile rules
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Product rules
+    match /products/{productId} {
+      // Allow reading products if they are active, or if the requester is the seller
+      allow read: if resource.data.isActive == true || (request.auth != null && resource.data.sellerId == request.auth.uid);
+      
+      // Allow creation if the user is authenticated and is set as the seller
+      allow create: if request.auth != null && request.resource.data.sellerId == request.auth.uid;
+      
+      // Allow update if:
+      // 1. The user is the seller (they can edit anything)
+      // 2. The user is incrementing contactCount (anyone authenticated can increment it)
+      allow update: if request.auth != null && (
+        resource.data.sellerId == request.auth.uid || 
+        (request.resource.data.contactCount == resource.data.contactCount + 1 && 
+         request.resource.data.title == resource.data.title &&
+         request.resource.data.imageUrl == resource.data.imageUrl)
+      );
+      
+      // Allow delete only if the user is the seller
+      allow delete: if request.auth != null && resource.data.sellerId == request.auth.uid;
+    }
+  }
+}
