@@ -32,6 +32,9 @@ export interface Product {
   sellerId: string;
   sellerName: string;
   sellerPhone: string;
+  maxContacts?: number;
+  contactedUserIds?: string[];
+  deactivatedAt?: any;
 }
 
 // User Profile Type definition
@@ -399,12 +402,14 @@ export const getSellerProducts = async (sellerId: string): Promise<Product[]> =>
       } as Product);
     });
 
-    // Filter out deactivated products older than 48 hours
+    // Filter out deactivated products older than 48 hours (based on deactivation time)
     results = results.filter(p => {
-      const isDeactivated = !p.isActive || p.contactCount >= 3;
+      const isDeactivated = !p.isActive || p.contactCount >= (p.maxContacts || 3);
       if (isDeactivated) {
-        const time = p.createdAt instanceof Date ? p.createdAt.getTime() : new Date(p.createdAt).getTime();
-        return time >= fortyEightHoursAgo;
+        const deactTime = p.deactivatedAt
+          ? (p.deactivatedAt instanceof Timestamp ? p.deactivatedAt.toDate().getTime() : new Date(p.deactivatedAt).getTime())
+          : (p.createdAt instanceof Date ? p.createdAt.getTime() : new Date(p.createdAt).getTime());
+        return deactTime >= fortyEightHoursAgo;
       }
       return true;
     });
@@ -419,12 +424,14 @@ export const getSellerProducts = async (sellerId: string): Promise<Product[]> =>
       return timeB - timeA;
     });
 
-    // Filter out deactivated products older than 48 hours
+    // Filter out deactivated products older than 48 hours (based on deactivation time)
     results = results.filter(p => {
-      const isDeactivated = !p.isActive || p.contactCount >= 3;
+      const isDeactivated = !p.isActive || p.contactCount >= (p.maxContacts || 3);
       if (isDeactivated) {
-        const time = typeof p.createdAt === "number" ? p.createdAt : new Date(p.createdAt).getTime();
-        return time >= fortyEightHoursAgo;
+        const deactTime = p.deactivatedAt
+          ? (typeof p.deactivatedAt === "number" ? p.deactivatedAt : new Date(p.deactivatedAt).getTime())
+          : (typeof p.createdAt === "number" ? p.createdAt : new Date(p.createdAt).getTime());
+        return deactTime >= fortyEightHoursAgo;
       }
       return true;
     });
@@ -441,7 +448,8 @@ export const createProduct = async (productData: Omit<Product, "id" | "createdAt
     createdAt: isFirebaseConfigured ? createdAt : createdAt.getTime(),
     isActive: true,
     contactCount: 0,
-    viewsCount: 0
+    viewsCount: 0,
+    contactedUserIds: []
   };
 
   if (isFirebaseConfigured) {
@@ -463,20 +471,33 @@ export const createProduct = async (productData: Omit<Product, "id" | "createdAt
   }
 };
 
-// 5. Contact Deactivation Logic (Up to 3 Contacts)
-export const updateProductContact = async (id: string): Promise<{ contactCount: number; isActive: boolean }> => {
+// 5. Contact Deactivation Logic (Configurable Max Contacts, Unique Users)
+export const updateProductContact = async (id: string, userId: string): Promise<{ contactCount: number; isActive: boolean }> => {
   if (isFirebaseConfigured) {
     const docRef = doc(db, "products", id);
     const docSnap = await getDoc(docRef);
     if (!docSnap.exists()) throw new Error("Product not found");
 
     const currentData = docSnap.data() as Product;
+    const contactedUserIds = currentData.contactedUserIds || [];
+    const maxLimit = currentData.maxContacts || 3;
+
+    if (contactedUserIds.includes(userId)) {
+      return { 
+        contactCount: currentData.contactCount || contactedUserIds.length, 
+        isActive: currentData.isActive 
+      };
+    }
+
+    const updatedUserIds = [...contactedUserIds, userId];
     const newCount = (currentData.contactCount || 0) + 1;
-    const isActive = newCount < 3; // Deactivates when contactCount becomes 3
+    const isActive = newCount < maxLimit;
 
     await updateDoc(docRef, {
       contactCount: newCount,
-      isActive: isActive
+      contactedUserIds: updatedUserIds,
+      isActive: isActive,
+      ...(!isActive ? { deactivatedAt: new Date() } : {})
     });
 
     return { contactCount: newCount, isActive };
@@ -485,11 +506,29 @@ export const updateProductContact = async (id: string): Promise<{ contactCount: 
     const index = products.findIndex(p => p.id === id);
     if (index === -1) throw new Error("Product not found");
 
-    const newCount = (products[index].contactCount || 0) + 1;
-    const isActive = newCount < 3;
+    const product = products[index];
+    const contactedUserIds = product.contactedUserIds || [];
+    const maxLimit = product.maxContacts || 3;
+
+    if (contactedUserIds.includes(userId)) {
+      return { 
+        contactCount: product.contactCount || contactedUserIds.length, 
+        isActive: product.isActive 
+      };
+    }
+
+    const updatedUserIds = [...contactedUserIds, userId];
+    const newCount = (product.contactCount || 0) + 1;
+    const isActive = newCount < maxLimit;
 
     products[index].contactCount = newCount;
+    products[index].contactedUserIds = updatedUserIds;
     products[index].isActive = isActive;
+    if (!isActive) {
+      products[index].deactivatedAt = Date.now();
+    } else {
+      delete products[index].deactivatedAt;
+    }
 
     saveMockProducts(products);
     return { contactCount: newCount, isActive };
@@ -525,7 +564,8 @@ export const reactivateProduct = async (id: string): Promise<Product> => {
     const updates = {
       createdAt: now,
       contactCount: 0,
-      isActive: true
+      isActive: true,
+      deactivatedAt: null
     };
     await updateDoc(docRef, updates);
     const docSnap = await getDoc(docRef);
@@ -543,6 +583,7 @@ export const reactivateProduct = async (id: string): Promise<Product> => {
     products[index].createdAt = now.getTime();
     products[index].contactCount = 0;
     products[index].isActive = true;
+    delete products[index].deactivatedAt;
 
     saveMockProducts(products);
     return products[index];

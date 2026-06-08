@@ -31,13 +31,13 @@ export default function AyudaPage() {
 
   const faqs = [
     {
-      q: "¿Por qué las publicaciones tienen un límite de 3 contactos?",
-      a: "El objetivo de Mesira es la entrega ágil y directa de regalos. Cuando 3 personas presionan 'Contactar' en un producto, asumimos que ya hay suficientes interesados para coordinar la entrega. Desactivar la publicación de inmediato protege al dueño de recibir cientos de mensajes innecesarios de WhatsApp o llamadas.",
+      q: "¿Cómo funciona el límite de contactos?",
+      a: "El objetivo de Mesira es la entrega ágil y directa de regalos. Podés elegir la cantidad de personas distintas que te pueden contactar (entre 1 y 10, por defecto 3) al publicar. Cuando esa cantidad de personas distintas presionan 'Contactar', la publicación se desactiva del feed principal para evitar que te sigan enviando mensajes innecesarios de WhatsApp.",
       icon: <ShieldAlert className="text-red-500" size={18} />
     },
     {
       q: "¿Cuándo expiran las publicaciones?",
-      a: "Para mantener el feed dinámico, las publicaciones activas se muestran en el listado principal hasta por 60 días. Sin embargo, las publicaciones desactivadas (las que ya consiguieron el límite de 3 contactos) se borran por completo tras 48 horas.",
+      a: "Para mantener el feed dinámico, las publicaciones activas se muestran en el listado principal hasta por 60 días. Sin embargo, las publicaciones desactivadas (las que ya alcanzaron su límite de contactos) se borran por completo tras 48 horas.",
       icon: <Clock className="text-amber-500" size={18} />
     },
     {

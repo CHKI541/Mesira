@@ -83,7 +83,7 @@ export default function ProductDetailPage() {
     setContactLoading(true);
     try {
       // Increment contacts in DB
-      const result = await updateProductContact(productId);
+      const result = await updateProductContact(productId, user.uid);
       
       // Save contact status in session storage
       sessionStorage.setItem(`contacted_${productId}`, "true");
@@ -324,7 +324,7 @@ export default function ProductDetailPage() {
               
               {!isDeactivated && !hasContacted && (
                 <p className="text-[10px] text-center text-gray-400 mt-2">
-                  Quedan {3 - product.contactCount} de 3 contactos disponibles para este producto.
+                  Quedan {(product.maxContacts || 3) - product.contactCount} de {product.maxContacts || 3} contactos disponibles para este producto.
                 </p>
               )}
             </div>

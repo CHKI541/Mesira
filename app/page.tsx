@@ -237,7 +237,7 @@ function HomeContent() {
             ¿Cómo funciona?
           </h4>
           <p className="mb-2">Publicá gratis artículos que no uses.</p>
-          <p className="mb-2">Para evitar spam, cada producto se desactiva automáticamente al recibir <strong>3 contactos</strong>.</p>
+          <p className="mb-2">Para evitar spam, cada producto se desactiva automáticamente al recibir el límite de contactos elegido (por defecto 3 de personas distintas).</p>
           <p>Las publicaciones expiran a las <strong>48 horas</strong> para mantener el feed activo.</p>
           <Link href="/ayuda" className="font-bold text-ml-blue hover:underline mt-2.5 inline-block">
             Ver más en Ayuda →

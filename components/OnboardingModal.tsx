@@ -35,9 +35,9 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
               <Shield size={20} />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-ml-dark">Límite anti-spam (3 Contactos)</h3>
+              <h3 className="text-sm font-bold text-ml-dark">Límite anti-spam (configurable)</h3>
               <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
-                Cuando 3 personas presionen "Contactar" en tu publicación para ver tu teléfono, el producto se <strong>desactivará automáticamente</strong> del feed público. Así evitamos que te sigan llamando una vez entregado.
+                Podés elegir que te contacten hasta un máximo de 10 personas distintas. Al alcanzar este límite, tu publicación se <strong>desactivará automáticamente</strong> del feed público para evitar llamadas molestas una vez que ya regalaste el producto.
               </p>
             </div>
           </div>

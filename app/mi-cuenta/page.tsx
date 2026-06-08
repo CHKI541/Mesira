@@ -54,6 +54,7 @@ function MiCuentaContent() {
   const [customNeighborhood, setCustomNeighborhood] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [maxContacts, setMaxContacts] = useState(3);
   
   // Dashboard states
   const [myProducts, setMyProducts] = useState<Product[]>([]);
@@ -151,7 +152,8 @@ function MiCuentaContent() {
         customNeighborhood: neighborhood === "Otro" ? customNeighborhood.trim() : "",
         sellerId: user.uid,
         sellerName: `${user.name} ${user.lastName}`.trim(),
-        sellerPhone: user.phone
+        sellerPhone: user.phone,
+        maxContacts: maxContacts
       });
 
       // 3. Clear form
@@ -162,6 +164,7 @@ function MiCuentaContent() {
       setCustomNeighborhood("");
       setImageFile(null);
       setImageSrc(null);
+      setMaxContacts(3);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
       setSuccessMessage("¡Tu producto fue publicado con éxito en Mesira Argentina!");
@@ -478,6 +481,27 @@ function MiCuentaContent() {
                 </div>
               )}
 
+              {/* Max Contacts Limit */}
+              <div>
+                <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">
+                  Límite de personas que te pueden contactar
+                </label>
+                <select
+                  value={maxContacts}
+                  onChange={(e) => setMaxContacts(parseInt(e.target.value))}
+                  className="w-full border border-gray-300 rounded px-3 py-2 bg-white text-sm text-ml-dark focus:outline-none focus:border-ml-blue"
+                >
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                    <option key={num} value={num}>
+                      Hasta {num} {num === 1 ? "persona" : "personas"} (desactivación automática)
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-gray-400 mt-1">
+                  Cuando esta cantidad de personas distintas te contacten, tu publicación se desactivará del feed para evitar spam.
+                </p>
+              </div>
+
               {/* Image Picker */}
               <div>
                 <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">
@@ -576,9 +600,15 @@ function MiCuentaContent() {
                 const createdTime = typeof prod.createdAt === "number" ? prod.createdAt : new Date(prod.createdAt).getTime();
                 const ageHours = (Date.now() - createdTime) / (60 * 60 * 1000);
                 
-                const isExpiredActive = prod.isActive && prod.contactCount < 3 && ageHours > 60 * 24;
-                const isExpiredDeactivated = (!prod.isActive || prod.contactCount >= 3) && ageHours > 48;
-                const isDeactivated = !prod.isActive || prod.contactCount >= 3 || isExpiredActive || isExpiredDeactivated;
+                const limit = prod.maxContacts || 3;
+                const deactTime = prod.deactivatedAt
+                  ? (typeof prod.deactivatedAt === "number" ? prod.deactivatedAt : new Date(prod.deactivatedAt).getTime())
+                  : createdTime;
+                const deactAgeHours = (Date.now() - deactTime) / (60 * 60 * 1000);
+                
+                const isExpiredActive = prod.isActive && prod.contactCount < limit && ageHours > 60 * 24;
+                const isExpiredDeactivated = (!prod.isActive || prod.contactCount >= limit) && deactAgeHours > 48;
+                const isDeactivated = !prod.isActive || prod.contactCount >= limit || isExpiredActive || isExpiredDeactivated;
                 
                 const neighborhoodLabel = prod.neighborhood === "Otro" ? prod.customNeighborhood : prod.neighborhood;
 
@@ -610,7 +640,7 @@ function MiCuentaContent() {
                           )}
                           
                           <span className="text-[9px] font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded border border-gray-200">
-                            {prod.contactCount} / 3 contactos
+                            {prod.contactCount} / {limit} contactos
                           </span>
 
                           <span className="text-[9px] font-bold bg-blue-50 text-ml-blue px-2 py-0.5 rounded border border-blue-200">
