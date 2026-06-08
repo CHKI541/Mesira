@@ -22,7 +22,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
           </div>
           <h2 className="text-xl font-bold">¡Bienvenido a Mesira Argentina!</h2>
           <p className="text-xs text-gray-700 mt-1">
-            Tu cuenta está activa. Conocé las reglas básicas para empezar a donar de forma segura:
+            Tu cuenta está activa. Conocé las reglas básicas para empezar a publicar y regalar de forma segura:
           </p>
         </div>
 

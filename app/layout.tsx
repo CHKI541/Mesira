@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mesira Argentina - Donaciones gratuitas y sin spam",
-  description: "Publica productos que ya no uses y encontrá donaciones cerca tuyo. Rápido, transparente y protegido contra spam.",
+  title: "Mesira Argentina - Regalos gratis y sin spam",
+  description: "Publicá productos que ya no uses y encontrá regalos cerca tuyo. Rápido, transparente y protegido contra spam.",
 };
 
 export default function RootLayout({

@@ -383,7 +383,7 @@ function MiCuentaContent() {
           {/* Form Column */}
           <div className="lg:col-span-8 bg-white border border-ml-border rounded-lg p-6 shadow-sm">
             <h2 className="text-lg font-bold text-ml-dark mb-4 pb-2 border-b border-gray-150">
-              Detalles del producto a donar
+              Detalles del producto a regalar
             </h2>
 
             <form onSubmit={handleFormSubmit} className="space-y-5">
@@ -550,7 +550,7 @@ function MiCuentaContent() {
       {activeTab === "mis-publicaciones" && (
         <div className="bg-white border border-ml-border rounded-lg shadow-sm overflow-hidden">
           <h2 className="text-lg font-bold text-ml-dark p-6 border-b border-gray-150">
-            Administrar mis donaciones
+            Administrar mis publicaciones
           </h2>
 
           {loadingProducts ? (

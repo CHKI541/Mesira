@@ -242,7 +242,7 @@ export default function ProductDetailPage() {
                 <span className="text-3xl font-light text-ml-green tracking-tight flex items-baseline">
                   Gratis
                   <span className="text-xs font-bold text-ml-green uppercase ml-2 bg-green-50 px-1.5 py-0.5 rounded border border-green-150">
-                    Donación
+                    Regalo
                   </span>
                 </span>
               </div>
@@ -286,7 +286,7 @@ export default function ProductDetailPage() {
                       {formattedPhone}
                     </strong>
                     <span className="block text-[10px] text-gray-400 mt-0.5">
-                      Donante: {product.sellerName}
+                      Dueño: {product.sellerName}
                     </span>
                   </div>
 
@@ -297,7 +297,7 @@ export default function ProductDetailPage() {
                     className="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white font-bold py-3 px-4 rounded text-sm transition shadow-sm focus:outline-none"
                   >
                     <MessageSquare size={18} />
-                    <span>Enviar WhatsApp al donante</span>
+                    <span>Enviar WhatsApp al dueño</span>
                     <ExternalLink size={14} />
                   </a>
                 </div>

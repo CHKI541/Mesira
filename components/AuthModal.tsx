@@ -228,7 +228,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               </div>
               <h2 className="text-2xl font-bold text-ml-dark mb-2">¡Cuenta Registrada!</h2>
               <p className="text-sm text-gray-500 mb-6">
-                Tu perfil de donante fue creado con éxito y tu teléfono argentino está registrado. Ya podés disfrutar de Mesira Argentina.
+                Tu perfil fue creado con éxito y tu teléfono argentino está registrado. Ya podés disfrutar de Mesira Argentina.
               </p>
 
               <button

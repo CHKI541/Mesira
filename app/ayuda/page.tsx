@@ -32,7 +32,7 @@ export default function AyudaPage() {
   const faqs = [
     {
       q: "¿Por qué las publicaciones tienen un límite de 3 contactos?",
-      a: "El objetivo de Mesira es la donación ágil y directa. Cuando 3 personas presionan 'Contactar' en un producto, asumimos que ya hay suficientes interesados para coordinar la entrega. Desactivar la publicación de inmediato protege al donante de recibir cientos de mensajes innecesarios de WhatsApp o llamadas.",
+      a: "El objetivo de Mesira es la entrega ágil y directa de regalos. Cuando 3 personas presionan 'Contactar' en un producto, asumimos que ya hay suficientes interesados para coordinar la entrega. Desactivar la publicación de inmediato protege al dueño de recibir cientos de mensajes innecesarios de WhatsApp o llamadas.",
       icon: <ShieldAlert className="text-red-500" size={18} />
     },
     {
@@ -47,12 +47,12 @@ export default function AyudaPage() {
     },
     {
       q: "¿Por qué es obligatorio registrar un celular argentino?",
-      a: "Solicitamos tu celular para que los interesados puedan enviarte un mensaje directo a WhatsApp. Al ser un número argentino (+54 9), garantizamos que la comunidad de donación sea local y real para coordinar las entregas.",
+      a: "Solicitamos tu celular para que los interesados puedan enviarte un mensaje directo a WhatsApp. Al ser un número argentino (+54 9), garantizamos que la comunidad sea local y real para coordinar las entregas.",
       icon: <Smartphone className="text-purple-500" size={18} />
     },
     {
       q: "¿Tengo que pagar algo por usar Mesira?",
-      a: "No, Mesira es 100% gratuita. Está prohibida la venta de productos en la plataforma. Todos los artículos publicados se ofrecen con carácter de donación a la comunidad.",
+      a: "No, Mesira es 100% gratuita. Está prohibida la venta de productos en la plataforma. Todos los artículos publicados se ofrecen con carácter de regalo a la comunidad.",
       icon: <Heart className="text-pink-500" size={18} />
     }
   ];
@@ -78,7 +78,7 @@ export default function AyudaPage() {
             <h1 className="text-2xl font-black text-ml-dark">Centro de Ayuda</h1>
           </div>
           <p className="text-sm text-gray-500 leading-relaxed">
-            Mesira Argentina es una red solidaria de donación de artículos. Diseñamos este sistema para que regalar lo que no usás sea rápido, sencillo y, sobre todo, libre de acoso y spam.
+            Mesira Argentina es una red solidaria para regalar artículos. Diseñamos este sistema para que regalar lo que no usás sea rápido, sencillo y, sobre todo, libre de acoso y spam.
           </p>
         </div>
 
