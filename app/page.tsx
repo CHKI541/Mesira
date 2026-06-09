@@ -35,6 +35,7 @@ function HomeContent() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionOnboardingClosed, setSessionOnboardingClosed] = useState(false);
 
   // Accordion open states (closed by default)
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
@@ -197,7 +198,8 @@ function HomeContent() {
     { value: "bebes", label: "Bebés" },
     { value: "juguetes", label: "Juguetes" },
     { value: "libros", label: "Libros" },
-    { value: "kodesh y judaica", label: "Kodesh y Judaica" }
+    { value: "kodesh y judaica", label: "Kodesh y Judaica" },
+    { value: "otro", label: "Otro" }
   ];
 
   const AVAILABLE_NEIGHBORHOODS = ["Flores", "Once", "Barracas", "Belgrano", "Palermo", "Villa Crespo", "Otro"];
@@ -517,8 +519,14 @@ function HomeContent() {
 
       {/* Welcome / Onboarding Rules Modal */}
       <OnboardingModal 
-        isOpen={user !== null && user.isPhoneVerified && !isOnboardingCompleted} 
-        onClose={() => setIsOnboardingCompleted(true)}
+        isOpen={user !== null && user.isPhoneVerified && !isOnboardingCompleted && !sessionOnboardingClosed} 
+        onClose={(dontShowAgain) => {
+          if (dontShowAgain) {
+            setIsOnboardingCompleted(true);
+          } else {
+            setSessionOnboardingClosed(true);
+          }
+        }}
       />
     </div>
   );

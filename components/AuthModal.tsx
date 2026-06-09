@@ -139,11 +139,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 <span>Continuar con Google</span>
               </button>
 
-              <div className="mt-6 border-t border-gray-100 pt-4">
-                <p className="text-[11px] text-gray-400 leading-relaxed">
-                  Al continuar, aceptas las reglas de Mesira Argentina: publicaciones automáticas gratis por 48 horas o hasta un máximo de 3 contactos para evitar el spam.
-                </p>
-              </div>
             </div>
           )}
 

@@ -29,18 +29,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isOnboardingCompleted, setIsOnboardingCompleted] = useState(false);
 
-  // Check if onboarding was completed in this session
+  // Check if onboarding was completed for this user
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const completed = sessionStorage.getItem("mesira_onboarding_completed") === "true";
-      setIsOnboardingCompleted(completed);
+      if (user) {
+        const completed = localStorage.getItem(`mesira_onboarding_completed_${user.uid}`) === "true";
+        setIsOnboardingCompleted(completed);
+      } else {
+        setIsOnboardingCompleted(false);
+      }
     }
-  }, []);
+  }, [user]);
 
   const handleSetOnboardingCompleted = (val: boolean) => {
     setIsOnboardingCompleted(val);
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem("mesira_onboarding_completed", val ? "true" : "false");
+    if (typeof window !== "undefined" && user) {
+      localStorage.setItem(`mesira_onboarding_completed_${user.uid}`, val ? "true" : "false");
     }
   };
 

@@ -1,14 +1,16 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Sparkles, Shield, Clock, Eye, Trash2, ArrowRight } from "lucide-react";
 
 interface OnboardingModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (dontShowAgain: boolean) => void;
 }
 
 export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) => {
+  const [dontShowAgain, setDontShowAgain] = useState(true);
+
   if (!isOpen) return null;
 
   return (
@@ -68,11 +70,21 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
             </div>
           </div>
 
-          {/* Action button */}
-          <div className="pt-4 border-t border-gray-100 flex justify-end">
+          {/* Action footer with checkbox */}
+          <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <label className="flex items-center gap-2 text-xs font-semibold text-gray-600 cursor-pointer select-none">
+              <input 
+                type="checkbox" 
+                checked={dontShowAgain}
+                onChange={(e) => setDontShowAgain(e.target.checked)}
+                className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500/20 w-4 h-4 cursor-pointer"
+              />
+              <span>No volver a mostrar este mensaje</span>
+            </label>
+
             <button
-              onClick={onClose}
-              className="bg-ml-blue hover:bg-ml-blue-hover text-white px-5 py-2.5 rounded font-bold text-sm transition flex items-center gap-2 shadow-sm focus:outline-none"
+              onClick={() => onClose(dontShowAgain)}
+              className="bg-ml-blue hover:bg-ml-blue-hover text-white px-5 py-2.5 rounded font-bold text-sm transition flex items-center gap-2 shadow-sm focus:outline-none shrink-0"
             >
               <span>Entendido, ¡empezar!</span>
               <ArrowRight size={16} />

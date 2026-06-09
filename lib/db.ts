@@ -274,10 +274,9 @@ export const getProducts = async (filters?: FilterOptions): Promise<Product[]> =
     const productsRef = collection(db, "products");
     const cutoffTime = new Date(cutoffTimeMs);
 
-    // Initial query filters active products
+    // Query products created in the last 60 days (both active and inactive)
     let q = query(
       productsRef,
-      where("isActive", "==", true),
       where("createdAt", ">=", Timestamp.fromDate(cutoffTime)),
       orderBy("createdAt", "desc")
     );
@@ -292,6 +291,14 @@ export const getProducts = async (filters?: FilterOptions): Promise<Product[]> =
         id: doc.id,
         createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : data.createdAt
       } as Product);
+    });
+
+    // Filter out deactivated products older than 48 hours
+    results = results.filter(p => {
+      if (p.isActive) return true;
+      if (!p.deactivatedAt) return false;
+      const deactTime = p.deactivatedAt instanceof Timestamp ? p.deactivatedAt.toDate().getTime() : new Date(p.deactivatedAt).getTime();
+      return (Date.now() - deactTime) < 48 * 60 * 60 * 1000;
     });
 
     // Apply filters and search query on the result set
@@ -332,10 +339,18 @@ export const getProducts = async (filters?: FilterOptions): Promise<Product[]> =
     // Mock Mode
     let results = getMockProducts();
 
-    // Filter active products not older than 48 hours
+    // Filter active products not older than 60 days, and inactive products deactivated within 48 hours
+    const sixtyDaysAgo = Date.now() - 60 * 24 * 60 * 60 * 1000;
+    const fortyEightHoursAgo = Date.now() - 48 * 60 * 60 * 1000;
+
     results = results.filter(p => {
       const createdTime = typeof p.createdAt === "number" ? p.createdAt : new Date(p.createdAt).getTime();
-      return p.isActive === true && createdTime >= cutoffTimeMs;
+      if (createdTime < sixtyDaysAgo) return false;
+
+      if (p.isActive) return true;
+      if (!p.deactivatedAt) return false;
+      const deactTime = typeof p.deactivatedAt === "number" ? p.deactivatedAt : new Date(p.deactivatedAt).getTime();
+      return deactTime >= fortyEightHoursAgo;
     });
 
     // Sort by createdAt descending

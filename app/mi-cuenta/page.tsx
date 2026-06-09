@@ -42,7 +42,8 @@ const AVAILABLE_CATEGORIES = [
   { value: "bebes", label: "Bebés" },
   { value: "juguetes", label: "Juguetes" },
   { value: "libros", label: "Libros" },
-  { value: "kodesh y judaica", label: "Kodesh y Judaica" }
+  { value: "kodesh y judaica", label: "Kodesh y Judaica" },
+  { value: "otro", label: "Otro" }
 ];
 
 function MiCuentaContent() {

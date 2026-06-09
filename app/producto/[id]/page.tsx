@@ -35,6 +35,7 @@ export default function ProductDetailPage() {
   const [hasContacted, setHasContacted] = useState(false);
   const [contactLoading, setContactLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionOnboardingClosed, setSessionOnboardingClosed] = useState(false);
 
   // Load product details
   useEffect(() => {
@@ -401,8 +402,14 @@ export default function ProductDetailPage() {
       />
 
       <OnboardingModal 
-        isOpen={user !== null && user.isPhoneVerified && !isOnboardingCompleted} 
-        onClose={() => setIsOnboardingCompleted(true)}
+        isOpen={user !== null && user.isPhoneVerified && !isOnboardingCompleted && !sessionOnboardingClosed} 
+        onClose={(dontShowAgain) => {
+          if (dontShowAgain) {
+            setIsOnboardingCompleted(true);
+          } else {
+            setSessionOnboardingClosed(true);
+          }
+        }}
       />
     </div>
   );

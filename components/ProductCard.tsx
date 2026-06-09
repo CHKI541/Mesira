@@ -55,14 +55,20 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <img 
           src={product.imageUrl || "/placeholder-image.png"} 
           alt={product.title} 
-          className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+          className={`w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300 ${!product.isActive ? "grayscale opacity-70" : ""}`}
           loading="lazy"
         />
         
-        {/* Condition Badge */}
-        <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full border ${condition.bg} shadow-sm uppercase tracking-wider`}>
-          {condition.text}
-        </span>
+        {/* Condition Badge or Deactivated Badge */}
+        {!product.isActive ? (
+          <span className="absolute top-2 left-2 text-[10px] font-black bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider">
+            Desactivado
+          </span>
+        ) : (
+          <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full border ${condition.bg} shadow-sm uppercase tracking-wider`}>
+            {condition.text}
+          </span>
+        )}
       </div>
 
       {/* Product Content Details */}
@@ -88,11 +94,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
 
           {/* Remaining contacts/intentos */}
-          <div className="inline-flex text-[10px] font-bold text-[#00a650] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 mt-1 flex items-center">
-            {((product.maxContacts || 3) - product.contactCount) === 1 
-              ? "Queda 1 contacto" 
-              : `Quedan ${(product.maxContacts || 3) - product.contactCount} contactos`}
-          </div>
+          {!product.isActive ? (
+            <div className="inline-flex text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded border border-red-100 mt-1 flex items-center">
+              Sin contactos disponibles
+            </div>
+          ) : (
+            <div className="inline-flex text-[10px] font-bold text-[#00a650] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 mt-1 flex items-center">
+              {((product.maxContacts || 3) - product.contactCount) === 1 
+                ? "Queda 1 contacto" 
+                : `Quedan ${(product.maxContacts || 3) - product.contactCount} contactos`}
+            </div>
+          )}
         </div>
       </div>
     </Link>
