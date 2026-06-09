@@ -108,7 +108,7 @@ const HeaderContent: React.FC<HeaderProps> = ({ onOpenAuthModal }) => {
       {/* Center: Search Bar */}
       <form 
         onSubmit={handleSearchSubmit} 
-        className="flex-1 max-w-2xl w-full flex items-center bg-white rounded shadow-sm border border-transparent focus-within:border-ml-blue transition-all"
+        className="flex-1 max-w-2xl w-full flex items-center bg-white rounded-lg shadow-sm border border-slate-200 focus-within:border-ml-blue focus-within:ring-2 focus-within:ring-ml-blue/15 transition-all"
       >
         <input
           type="text"
