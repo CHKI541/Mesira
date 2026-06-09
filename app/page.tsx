@@ -440,20 +440,21 @@ function HomeContent() {
             {isConditionsOpen && (
               <div className="px-4 pb-4 pt-2 flex flex-wrap gap-2 animate-in slide-in-from-top duration-150">
                 {[
-                  { label: "Nuevo", values: ["perfecto"] },
-                  { label: "Usado", values: ["buen", "funcional"] },
-                  { label: "Gratis", values: ["reparar"] }
+                  { label: "Perfecto estado", value: "perfecto" },
+                  { label: "Buen estado", value: "buen" },
+                  { label: "Funcional", value: "funcional" },
+                  { label: "Mal estado / a reparar", value: "reparar" }
                 ].map((pill) => {
-                  const isChecked = pill.values.every(val => tempConditions.includes(val));
+                  const isChecked = tempConditions.includes(pill.value);
                   return (
                     <button
                       key={pill.label}
                       type="button"
                       onClick={() => {
                         if (isChecked) {
-                          setTempConditions(prev => prev.filter(c => !pill.values.includes(c)));
+                          setTempConditions(prev => prev.filter(c => c !== pill.value));
                         } else {
-                          setTempConditions(prev => [...prev, ...pill.values]);
+                          setTempConditions(prev => [...prev, pill.value]);
                         }
                       }}
                       className={`px-3.5 py-1.5 text-xs font-bold rounded-full transition-all duration-150 border cursor-pointer ${
@@ -547,53 +548,6 @@ function HomeContent() {
           <div className="space-y-8">
             {groupedKeys.map((dayLabel) => {
               const dayProducts = groupedProducts[dayLabel];
-              const isTodayGroup = dayLabel === "Hoy";
-
-              if (isTodayGroup && !isFiltering) {
-                return (
-                  <div key={dayLabel} className="animate-in fade-in duration-300">
-                    <div className="flex flex-col lg:flex-row gap-6">
-                      {/* Left side: Featured Products */}
-                      <div className="flex-1 min-w-0">
-                        <h2 className="text-lg font-black text-[#002366] mb-4 border-b border-gray-200/60 pb-1 flex items-baseline gap-2 select-none">
-                          Artículos Destacados Hoy
-                          <span className="text-xs font-normal text-gray-400">
-                            ({Math.min(dayProducts.length, 2)})
-                          </span>
-                        </h2>
-                        <div className="grid grid-cols-2 gap-4">
-                          {dayProducts.slice(0, 2).map((prod) => (
-                            <ProductCard key={prod.id} product={prod} />
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Right side: Novedades */}
-                      <div className="flex-1 min-w-0">
-                        <h2 className="text-lg font-black text-[#002366] mb-4 border-b border-gray-200/60 pb-1 flex items-baseline gap-2 select-none">
-                          Novedades
-                          <span className="text-xs font-normal text-gray-400">
-                            ({Math.max(0, dayProducts.length - 2)})
-                          </span>
-                        </h2>
-                        {dayProducts.length <= 2 ? (
-                          <div className="bg-white rounded-lg border border-ml-border p-6 text-center text-xs text-gray-400 shadow-sm">
-                            No hay más novedades hoy.
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-2 gap-4">
-                            {dayProducts.slice(2).map((prod) => (
-                              <ProductCard key={prod.id} product={prod} />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-
-              // Otherwise, render standard day block
               return (
                 <div key={dayLabel} className="animate-in fade-in duration-300">
                   <h2 className="text-lg font-black text-ml-dark mb-4 border-b border-gray-200/60 pb-1 flex items-baseline gap-2">
