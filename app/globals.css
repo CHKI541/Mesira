@@ -1,19 +1,19 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ml-yellow: #ffe600;
-  --color-ml-blue: #3483fa;
-  --color-ml-blue-hover: #2968c8;
-  --color-ml-gray: #ebebeb;
-  --color-ml-dark: #333333;
-  --color-ml-green: #00a650;
-  --color-ml-bg: #f5f5f5;
-  --color-ml-border: #e6e6e6;
+  --color-ml-yellow: #f8fafc; /* Clean off-white/slate-50 for header */
+  --color-ml-blue: #6366f1; /* Vibrant electric indigo */
+  --color-ml-blue-hover: #4f46e5; /* Darker indigo for hover */
+  --color-ml-gray: #f1f5f9; /* Slate-100 gray */
+  --color-ml-dark: #1e293b; /* Sleek slate-800 for text */
+  --color-ml-green: #10b981; /* Emerald-500 for success/active states */
+  --color-ml-bg: #f8fafc; /* Slate-50 page content background */
+  --color-ml-border: #e2e8f0; /* Slate-200 for thin borders */
 }
 
 :root {
-  --background: #ebebeb;
-  --foreground: #333333;
+  --background: #f1f5f9; /* Slate-100 page background */
+  --foreground: #1e293b; /* Slate-800 page text */
 }
 
 body {

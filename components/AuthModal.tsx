@@ -88,8 +88,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       {/* Modal Card */}
       <div className="relative w-full max-w-md bg-white rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
-        {/* Header yellow border */}
-        <div className="h-1.5 bg-ml-yellow w-full"></div>
+        {/* Header accent border */}
+        <div className="h-1.5 bg-ml-blue w-full"></div>
 
         {/* Close Button */}
         {step !== 'success' && (
@@ -106,7 +106,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
           {/* STEP 1: Login / Sign In */}
           {step === 'login' && (
             <div className="text-center">
-              <div className="inline-flex p-3 rounded-full bg-yellow-50 text-ml-blue mb-4">
+              <div className="inline-flex p-3 rounded-full bg-indigo-50 text-ml-blue mb-4">
                 <Sparkles size={32} />
               </div>
               <h2 className="text-2xl font-bold text-ml-dark mb-2">Bienvenido a Mesira</h2>

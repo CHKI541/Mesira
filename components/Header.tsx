@@ -177,7 +177,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
   const { user } = useAuth();
   
   return (
-    <header className="sticky top-0 z-40 w-full bg-ml-yellow border-b border-ml-yellow py-2 px-4 shadow-sm">
+    <header className="sticky top-0 z-40 w-full bg-ml-yellow border-b border-ml-border py-2 px-4 shadow-sm">
       <Suspense fallback={<HeaderFallback />}>
         <HeaderContent {...props} />
       </Suspense>
