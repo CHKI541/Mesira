@@ -21,13 +21,14 @@ import {
   Image as ImageIcon, 
   AlertTriangle, 
   Loader2, 
-  CheckCircle,
-  Eye,
-  Trash2,
-  RefreshCw,
-  Clock,
-  Sparkles,
-  PowerOff
+  CheckCircle, 
+  Eye, 
+  Trash2, 
+  RefreshCw, 
+  Clock, 
+  Sparkles, 
+  PowerOff,
+  User
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -59,9 +60,20 @@ function MiCuentaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Tab state: 'publicar' | 'mis-publicaciones'
-  const [activeTab, setActiveTab] = useState<'publicar' | 'mis-publicaciones'>('publicar');
+  // Tab state: 'publicar' | 'mis-publicaciones' | 'perfil'
+  const [activeTab, setActiveTab] = useState<'publicar' | 'mis-publicaciones' | 'perfil'>('publicar');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // Profile edit states
+  const [profileName, setProfileName] = useState("");
+  const [profileLastName, setProfileLastName] = useState("");
+  const [profilePhone, setProfilePhone] = useState("");
+  const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+
+  // Publication contact phone state
+  const [pubPhone, setPubPhone] = useState("");
 
   // Form states for creation
   const [title, setTitle] = useState("");
@@ -96,7 +108,7 @@ function MiCuentaContent() {
   // Parse tabs from URL search parameters (?tab=publicar)
   useEffect(() => {
     const tabParam = searchParams.get("tab");
-    if (tabParam === "publicar" || tabParam === "mis-publicaciones") {
+    if (tabParam === "publicar" || tabParam === "mis-publicaciones" || tabParam === "perfil") {
       setActiveTab(tabParam as any);
     }
   }, [searchParams]);
@@ -120,16 +132,48 @@ function MiCuentaContent() {
     loadMyProducts();
   }, [user, activeTab]);
 
-  // Sync user values if registration details are empty
+  // Sync user values for registration or profile editing
   useEffect(() => {
-    if (user && !user.isPhoneVerified) {
-      setRegName(user.name || "");
-      setRegLastName(user.lastName || "");
-      if (user.phone) {
-        setRegPhone(user.phone.replace("+549", ""));
+    if (user) {
+      if (!user.isPhoneVerified) {
+        setRegName(user.name || "");
+        setRegLastName(user.lastName || "");
+        if (user.phone) {
+          setRegPhone(user.phone.replace("+549", ""));
+        }
+      } else {
+        // Pre-fill profile editing fields
+        setProfileName(user.name || "");
+        setProfileLastName(user.lastName || "");
+        setProfilePhone(user.phone ? user.phone.replace("+549", "") : "");
+        // Pre-fill publication contact number (if not already modified)
+        setPubPhone(prev => prev || (user.phone ? user.phone.replace("+549", "") : ""));
       }
     }
   }, [user]);
+
+  const handleProfileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileError(null);
+    setProfileSuccess(null);
+
+    if (!profileName.trim()) return setProfileError("Ingresá tu nombre.");
+    if (!profileLastName.trim()) return setProfileError("Ingresá tu apellido.");
+    if (!/^\d{10}$/.test(profilePhone)) {
+      return setProfileError("El número de celular debe tener exactamente 10 dígitos (Ej: 1134567890).");
+    }
+
+    const fullPhone = `+549${profilePhone}`;
+    setProfileLoading(true);
+    try {
+      await completeRegistrationDetails(profileName.trim(), profileLastName.trim(), fullPhone);
+      setProfileSuccess("¡Tus datos de perfil fueron actualizados con éxito!");
+    } catch (err: any) {
+      setProfileError(err.message || "Error al actualizar los datos.");
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
   // Trigger preview image reader
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -174,6 +218,9 @@ function MiCuentaContent() {
     if (neighborhood === "Otro" && !customNeighborhood.trim()) {
       return setDashboardError("Por favor, ingresá el nombre del barrio.");
     }
+    if (!/^\d{10}$/.test(pubPhone)) {
+      return setDashboardError("El número de contacto para la publicación debe tener exactamente 10 dígitos (Ej: 1134567890).");
+    }
 
     setFormLoading(true);
     try {
@@ -190,7 +237,7 @@ function MiCuentaContent() {
         customNeighborhood: neighborhood === "Otro" ? customNeighborhood.trim() : "",
         sellerId: user.uid,
         sellerName: `${user.name} ${user.lastName}`.trim(),
-        sellerPhone: user.phone,
+        sellerPhone: `+549${pubPhone.trim()}`,
         sellerEmail: user.email,
         maxContacts: maxContacts,
         contactPreferences: preferences,
@@ -211,6 +258,7 @@ function MiCuentaContent() {
       setPrefSMS(false);
       setPrefMail(false);
       setSelectedCategories([]);
+      setPubPhone(user?.phone ? user.phone.replace("+549", "") : "");
       if (fileInputRef.current) fileInputRef.current.value = "";
 
       setSuccessMessage("¡Tu producto fue publicado con éxito en Mesira Argentina!");
@@ -409,7 +457,7 @@ function MiCuentaContent() {
           onClick={() => setActiveTab("publicar")}
           className={`flex-1 md:flex-initial flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-bold border-b-2 transition-all focus:outline-none ${
             activeTab === "publicar" 
-              ? "border-ml-blue text-ml-blue bg-white" 
+              ? "border-[#0043C6] text-[#0043C6] bg-white border-b-3" 
               : "border-transparent text-gray-500 hover:text-ml-dark hover:bg-gray-50/50"
           }`}
         >
@@ -421,12 +469,24 @@ function MiCuentaContent() {
           onClick={() => setActiveTab("mis-publicaciones")}
           className={`flex-1 md:flex-initial flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-bold border-b-2 transition-all focus:outline-none ${
             activeTab === "mis-publicaciones" 
-              ? "border-ml-blue text-ml-blue bg-white" 
+              ? "border-[#0043C6] text-[#0043C6] bg-white border-b-3" 
               : "border-transparent text-gray-500 hover:text-ml-dark hover:bg-gray-50/50"
           }`}
         >
           <FolderHeart size={18} />
           <span>Mis Publicaciones</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("perfil")}
+          className={`flex-1 md:flex-initial flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-bold border-b-2 transition-all focus:outline-none ${
+            activeTab === "perfil" 
+              ? "border-[#0043C6] text-[#0043C6] bg-white border-b-3" 
+              : "border-transparent text-gray-500 hover:text-ml-dark hover:bg-gray-50/50"
+          }`}
+        >
+          <User size={18} />
+          <span>Mi Perfil</span>
         </button>
       </div>
 
@@ -600,6 +660,30 @@ function MiCuentaContent() {
                 </select>
                 <p className="text-[10px] text-gray-400 mt-1">
                   Cuando esta cantidad de personas distintas te contacten, tu publicación se desactivará del feed para evitar spam.
+                </p>
+              </div>
+
+              {/* Phone contact input for publication */}
+              <div>
+                <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">
+                  Número de celular de contacto para esta publicación
+                </label>
+                <div className="flex gap-2">
+                  <span className="bg-gray-100 border border-gray-300 rounded px-3 py-2 text-sm text-gray-500 font-medium flex items-center select-none">
+                    +54 9
+                  </span>
+                  <input
+                    type="tel"
+                    required
+                    maxLength={10}
+                    placeholder="Ej. 1134567890"
+                    value={pubPhone}
+                    onChange={(e) => setPubPhone(e.target.value.replace(/\D/g, ""))}
+                    className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm text-ml-dark focus:outline-none focus:border-ml-blue"
+                  />
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1.5">
+                  Por defecto se completa con tu número de perfil, pero podés cambiarlo para esta publicación si preferís que te contacten a otro número.
                 </p>
               </div>
 
@@ -841,6 +925,78 @@ function MiCuentaContent() {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* TAB 3: PROFILE EDIT */}
+      {activeTab === "perfil" && (
+        <div className="max-w-xl mx-auto bg-white border border-ml-border rounded-lg p-6 shadow-sm w-full">
+          <h2 className="text-lg font-bold text-ml-dark mb-4 pb-2 border-b border-gray-150">
+            Editar datos de perfil y contacto
+          </h2>
+
+          {profileError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-2.5 rounded mb-4">
+              {profileError}
+            </div>
+          )}
+
+          {profileSuccess && (
+            <div className="bg-green-50 border border-green-200 text-green-700 text-xs p-2.5 rounded mb-4">
+              {profileSuccess}
+            </div>
+          )}
+
+          <form onSubmit={handleProfileSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">Nombre</label>
+              <input
+                type="text"
+                required
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-ml-dark focus:outline-none focus:border-ml-blue"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">Apellido</label>
+              <input
+                type="text"
+                required
+                value={profileLastName}
+                onChange={(e) => setProfileLastName(e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-ml-dark focus:outline-none focus:border-ml-blue"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">Celular Argentino</label>
+              <div className="flex gap-2">
+                <span className="bg-gray-100 border border-gray-300 rounded px-3 py-2 text-sm text-gray-500 font-medium flex items-center select-none">
+                  +54 9
+                </span>
+                <input
+                  type="tel"
+                  required
+                  maxLength={10}
+                  placeholder="Ej. 1134567890"
+                  value={profilePhone}
+                  onChange={(e) => setProfilePhone(e.target.value.replace(/\D/g, ""))}
+                  className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm text-ml-dark focus:outline-none focus:border-ml-blue"
+                />
+              </div>
+              <p className="text-[11px] text-gray-400 mt-1.5 leading-tight">
+                Código de área sin el 0 y número celular sin el 15. Debe tener exactamente 10 dígitos.
+              </p>
+            </div>
+            <button
+              type="submit"
+              disabled={profileLoading}
+              className="w-full bg-[#0043C6] hover:bg-[#0036A3] text-white py-2.5 rounded font-bold text-sm transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+            >
+              {profileLoading && <Loader2 className="animate-spin" size={16} />}
+              <span>Guardar cambios</span>
+            </button>
+          </form>
         </div>
       )}
     </>
