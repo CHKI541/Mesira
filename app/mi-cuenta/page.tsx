@@ -168,6 +168,7 @@ function MiCuentaContent() {
     try {
       await completeRegistrationDetails(profileName.trim(), profileLastName.trim(), fullPhone);
       setProfileSuccess("¡Tus datos de perfil fueron actualizados con éxito!");
+      setPubPhone(profilePhone);
     } catch (err: any) {
       setProfileError(err.message || "Error al actualizar los datos.");
     } finally {
