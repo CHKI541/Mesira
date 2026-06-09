@@ -509,7 +509,7 @@ function MiCuentaContent() {
                 </label>
                 <div 
                   onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-gray-300 hover:border-ml-blue rounded-lg p-5 text-center cursor-pointer transition bg-gray-50 hover:bg-blue-50/20 flex flex-col items-center justify-center gap-1.5"
+                  className="border-2 border-dashed border-gray-300 hover:border-ml-blue rounded-lg p-5 text-center cursor-pointer transition bg-gray-50 hover:bg-emerald-50/20 flex flex-col items-center justify-center gap-1.5"
                 >
                   <ImageIcon className="text-gray-400" size={32} />
                   <span className="text-xs font-bold text-ml-dark">Hacé click para subir una imagen</span>
@@ -523,7 +523,7 @@ function MiCuentaContent() {
                   />
                 </div>
                 {imageFile && (
-                  <div className="mt-2.5 bg-blue-50/50 border border-blue-100 rounded px-3 py-1.5 flex items-center justify-between text-xs text-ml-dark">
+                  <div className="mt-2.5 bg-emerald-50/50 border border-emerald-100 rounded px-3 py-1.5 flex items-center justify-between text-xs text-ml-dark">
                     <span className="truncate font-semibold">{imageFile.name}</span>
                     <button 
                       type="button"
@@ -643,7 +643,7 @@ function MiCuentaContent() {
                             {prod.contactCount} / {limit} contactos
                           </span>
 
-                          <span className="text-[9px] font-bold bg-blue-50 text-ml-blue px-2 py-0.5 rounded border border-blue-200">
+                          <span className="text-[9px] font-bold bg-emerald-50 text-ml-blue px-2 py-0.5 rounded border border-emerald-200">
                             {prod.viewsCount || 0} {prod.viewsCount === 1 ? "visita" : "visitas"} ({prod.viewedUserIds?.length || 0} {prod.viewedUserIds?.length === 1 ? "usuario" : "usuarios"})
                           </span>
                         </div>

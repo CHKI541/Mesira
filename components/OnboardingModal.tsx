@@ -31,7 +31,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
           
           {/* Rule 1 */}
           <div className="flex gap-4">
-            <div className="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-blue-50 text-ml-blue">
+            <div className="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-emerald-50 text-ml-blue">
               <Shield size={20} />
             </div>
             <div>

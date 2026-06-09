@@ -106,7 +106,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
           {/* STEP 1: Login / Sign In */}
           {step === 'login' && (
             <div className="text-center">
-              <div className="inline-flex p-3 rounded-full bg-indigo-50 text-ml-blue mb-4">
+              <div className="inline-flex p-3 rounded-full bg-emerald-50 text-ml-blue mb-4">
                 <Sparkles size={32} />
               </div>
               <h2 className="text-2xl font-bold text-ml-dark mb-2">Bienvenido a Mesira</h2>
