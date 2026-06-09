@@ -17,12 +17,20 @@ service cloud.firestore {
       
       // Allow update if:
       // 1. The user is the seller (they can edit anything)
-      // 2. The user is incrementing contactCount (anyone authenticated can increment it)
-      allow update: if request.auth != null && (
-        resource.data.sellerId == request.auth.uid || 
-        (request.resource.data.contactCount == resource.data.contactCount + 1 && 
-         request.resource.data.title == resource.data.title &&
-         request.resource.data.imageUrl == resource.data.imageUrl)
+      // 2. The user (authenticated) is registering a contact (only contact-related fields can change)
+      // 3. Anyone (authenticated or guest) is registering a view (only view-related fields can change)
+      allow update: if (
+        // Seller rule
+        (request.auth != null && resource.data.sellerId == request.auth.uid) ||
+        
+        // Contact registration rule
+        (request.auth != null && 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['contactCount', 'contactedUserIds', 'isActive', 'deactivatedAt']) &&
+         request.resource.data.contactCount == resource.data.contactCount + 1) ||
+         
+        // View registration rule
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewsCount', 'viewedUserIds']) &&
+         request.resource.data.viewsCount == resource.data.viewsCount + 1)
       );
       
       // Allow delete only if the user is the seller
