@@ -36,6 +36,8 @@ export interface Product {
   contactedUserIds?: string[];
   deactivatedAt?: any;
   viewedUserIds?: string[];
+  contactPreferences?: string[];
+  sellerEmail?: string;
 }
 
 // User Profile Type definition

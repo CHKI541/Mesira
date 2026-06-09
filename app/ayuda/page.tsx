@@ -31,28 +31,8 @@ export default function AyudaPage() {
 
   const faqs = [
     {
-      q: "¿Cómo funciona el límite de contactos?",
-      a: "El objetivo de Mesira es la entrega ágil y directa de regalos. Podés elegir la cantidad de personas distintas que te pueden contactar (entre 1 y 10, por defecto 3) al publicar. Cuando esa cantidad de personas distintas presionan 'Contactar', la publicación se desactiva del feed principal para evitar que te sigan enviando mensajes innecesarios de WhatsApp.",
-      icon: <ShieldAlert className="text-red-500" size={18} />
-    },
-    {
-      q: "¿Cuándo expiran las publicaciones?",
-      a: "Para mantener el feed dinámico, las publicaciones activas se muestran en el listado principal hasta por 60 días. Sin embargo, las publicaciones desactivadas (las que ya alcanzaron su límite de contactos) se borran por completo tras 48 horas.",
-      icon: <Clock className="text-amber-500" size={18} />
-    },
-    {
-      q: "Si mi producto se desactivó, ¿lo perdí?",
-      a: "No, mientras la publicación desactivada tenga menos de 48 horas, tendrás acceso a ella en 'Mi Cuenta'. Si la persona no retiró el producto, podés presionar 'Volver a activar' para restablecerla con 0 contactos y un período activo. Pasadas las 48 horas desactivada, se eliminará permanentemente.",
-      icon: <RotateCcw className="text-ml-blue" size={18} />
-    },
-    {
-      q: "¿Por qué es obligatorio registrar un celular argentino?",
-      a: "Solicitamos tu celular para que los interesados puedan enviarte un mensaje directo a WhatsApp. Al ser un número argentino (+54 9), garantizamos que la comunidad sea local y real para coordinar las entregas.",
-      icon: <Smartphone className="text-purple-500" size={18} />
-    },
-    {
       q: "¿Tengo que pagar algo por usar Mesira?",
-      a: "No, Mesira es 100% gratuita. Está prohibida la venta de productos en la plataforma. Todos los artículos publicados se ofrecen con carácter de regalo a la comunidad.",
+      a: "No, Mesira es 100% gratuita. Está prohibida la venta de productos en la plataforma.",
       icon: <Heart className="text-pink-500" size={18} />
     }
   ];
@@ -78,7 +58,7 @@ export default function AyudaPage() {
             <h1 className="text-2xl font-black text-ml-dark">Centro de Ayuda</h1>
           </div>
           <p className="text-sm text-gray-500 leading-relaxed">
-            Mesira Argentina es una red solidaria para regalar artículos. Diseñamos este sistema para que regalar lo que no usás sea rápido, sencillo y, sobre todo, libre de acoso y spam.
+            Mesira Argentina es una red solidaria para regalar artículos. Diseñamos este sistema para que regalar lo que no usás sea rápido y sencillo.
           </p>
         </div>
 

@@ -55,6 +55,10 @@ function MiCuentaContent() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [maxContacts, setMaxContacts] = useState(3);
+  const [prefWhatsApp, setPrefWhatsApp] = useState(true);
+  const [prefLlamadas, setPrefLlamadas] = useState(true);
+  const [prefSMS, setPrefSMS] = useState(false);
+  const [prefMail, setPrefMail] = useState(false);
   
   // Dashboard states
   const [myProducts, setMyProducts] = useState<Product[]>([]);
@@ -132,6 +136,18 @@ function MiCuentaContent() {
     if (!title.trim()) return setDashboardError("Por favor, ingresá un título.");
     if (title.length < 5) return setDashboardError("El título debe ser más descriptivo (mínimo 5 letras).");
     if (!description.trim()) return setDashboardError("Por favor, describí el producto.");
+    
+    // Construct and validate contact preferences
+    const preferences = [];
+    if (prefWhatsApp) preferences.push("whatsapp");
+    if (prefLlamadas) preferences.push("llamadas");
+    if (prefSMS) preferences.push("sms");
+    if (prefMail) preferences.push("mail");
+    
+    if (preferences.length === 0) {
+      return setDashboardError("Por favor, seleccioná al menos una preferencia de contacto.");
+    }
+    
     if (!imageFile) return setDashboardError("Por favor, subí una foto de tu producto.");
     if (neighborhood === "Otro" && !customNeighborhood.trim()) {
       return setDashboardError("Por favor, ingresá el nombre del barrio.");
@@ -153,7 +169,9 @@ function MiCuentaContent() {
         sellerId: user.uid,
         sellerName: `${user.name} ${user.lastName}`.trim(),
         sellerPhone: user.phone,
-        maxContacts: maxContacts
+        sellerEmail: user.email,
+        maxContacts: maxContacts,
+        contactPreferences: preferences
       });
 
       // 3. Clear form
@@ -165,6 +183,10 @@ function MiCuentaContent() {
       setImageFile(null);
       setImageSrc(null);
       setMaxContacts(3);
+      setPrefWhatsApp(true);
+      setPrefLlamadas(true);
+      setPrefSMS(false);
+      setPrefMail(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
       setSuccessMessage("¡Tu producto fue publicado con éxito en Mesira Argentina!");
@@ -422,7 +444,7 @@ function MiCuentaContent() {
                 />
                 <p className="text-xs text-amber-600 font-medium mt-1 leading-tight flex items-start gap-1">
                   <AlertTriangle size={14} className="shrink-0 mt-0.5" />
-                  <span>Recomendación: Describe tu producto detalladamente para evitar que se contacten con usted sin motivo.</span>
+                  <span>Recomendación: Describe tu producto detalladamente para evitar que te contacten sin motivo.</span>
                 </p>
               </div>
 
@@ -499,6 +521,54 @@ function MiCuentaContent() {
                 </select>
                 <p className="text-[10px] text-gray-400 mt-1">
                   Cuando esta cantidad de personas distintas te contacten, tu publicación se desactivará del feed para evitar spam.
+                </p>
+              </div>
+
+              {/* Preferencias de contacto */}
+              <div>
+                <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-2">
+                  Preferencias de contacto
+                </label>
+                <div className="grid grid-cols-2 gap-3 bg-gray-50/50 border border-gray-150 rounded-xl p-3.5">
+                  <label className="flex items-center gap-2.5 text-xs font-semibold text-ml-dark cursor-pointer select-none">
+                    <input 
+                      type="checkbox" 
+                      checked={prefWhatsApp} 
+                      onChange={(e) => setPrefWhatsApp(e.target.checked)}
+                      className="rounded border-gray-300 text-ml-blue focus:ring-ml-blue/20 w-4 h-4"
+                    />
+                    <span>WhatsApp</span>
+                  </label>
+                  <label className="flex items-center gap-2.5 text-xs font-semibold text-ml-dark cursor-pointer select-none">
+                    <input 
+                      type="checkbox" 
+                      checked={prefLlamadas} 
+                      onChange={(e) => setPrefLlamadas(e.target.checked)}
+                      className="rounded border-gray-300 text-ml-blue focus:ring-ml-blue/20 w-4 h-4"
+                    />
+                    <span>Llamadas</span>
+                  </label>
+                  <label className="flex items-center gap-2.5 text-xs font-semibold text-ml-dark cursor-pointer select-none">
+                    <input 
+                      type="checkbox" 
+                      checked={prefSMS} 
+                      onChange={(e) => setPrefSMS(e.target.checked)}
+                      className="rounded border-gray-300 text-ml-blue focus:ring-ml-blue/20 w-4 h-4"
+                    />
+                    <span>SMS</span>
+                  </label>
+                  <label className="flex items-center gap-2.5 text-xs font-semibold text-ml-dark cursor-pointer select-none">
+                    <input 
+                      type="checkbox" 
+                      checked={prefMail} 
+                      onChange={(e) => setPrefMail(e.target.checked)}
+                      className="rounded border-gray-300 text-ml-blue focus:ring-ml-blue/20 w-4 h-4"
+                    />
+                    <span>Email</span>
+                  </label>
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">
+                  Elegí de qué manera preferís que te contacten. Podés seleccionar más de una.
                 </p>
               </div>
 

@@ -18,7 +18,8 @@ import {
   Check, 
   ExternalLink,
   MessageSquare,
-  ShieldCheck
+  ShieldCheck,
+  Mail
 } from "lucide-react";
 
 export default function ProductDetailPage() {
@@ -190,6 +191,10 @@ export default function ProductDetailPage() {
   const rawPhone = formattedPhone.replace(/\+/g, "");
   const waLink = `https://wa.me/${rawPhone}?text=Hola%20${encodeURIComponent(product.sellerName)},%20te%20escribo%20desde%20Mesira%20por%20tu%20publicaci%C3%B3n%20"${encodeURIComponent(product.title)}"`;
 
+  const prefs = product.contactPreferences && product.contactPreferences.length > 0 
+    ? product.contactPreferences 
+    : ["whatsapp", "llamadas"];
+
   return (
     <div className="min-h-screen bg-ml-bg flex flex-col pb-12">
       <Header onOpenAuthModal={() => setIsAuthModalOpen(true)} />
@@ -284,32 +289,77 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* Display phone if revealed */}
+              {/* Display phone / email if revealed */}
               {hasContacted ? (
-                <div className="space-y-3">
-                  <div className="bg-green-50 border border-green-200 rounded p-4 text-center">
-                    <ShieldCheck className="mx-auto text-ml-green mb-1.5 animate-bounce" size={24} />
-                    <span className="block text-[11px] font-semibold text-green-700 uppercase tracking-wider">
+                <div className="space-y-3.5 animate-in fade-in duration-300">
+                  <div className="bg-cyan-50/50 border border-cyan-200 rounded-xl p-4 text-center">
+                    <ShieldCheck className="mx-auto text-ml-blue mb-1.5" size={24} />
+                    <span className="block text-[11px] font-bold text-cyan-800 uppercase tracking-wider">
                       Contacto Revelado
                     </span>
-                    <strong className="block text-xl text-ml-dark mt-1 font-mono tracking-wider selection:bg-green-100">
-                      {formattedPhone}
-                    </strong>
-                    <span className="block text-[10px] text-gray-400 mt-0.5">
+                    <span className="block text-[10px] text-gray-500 mt-0.5">
                       Dueño: {product.sellerName}
                     </span>
+                    
+                    {/* Show phone number if any phone-based preference is active */}
+                    {(prefs.includes("whatsapp") || prefs.includes("llamadas") || prefs.includes("sms")) && (
+                      <strong className="block text-xl text-ml-dark mt-2 font-mono tracking-wider">
+                        {formattedPhone}
+                      </strong>
+                    )}
+                    
+                    {/* Show email if mail preference is active */}
+                    {prefs.includes("mail") && product.sellerEmail && (
+                      <strong className="block text-sm text-ml-dark mt-1.5 font-mono break-all select-all">
+                        {product.sellerEmail}
+                      </strong>
+                    )}
                   </div>
 
-                  <a 
-                    href={waLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white font-bold py-3 px-4 rounded text-sm transition shadow-sm focus:outline-none"
-                  >
-                    <MessageSquare size={18} />
-                    <span>Enviar WhatsApp al dueño</span>
-                    <ExternalLink size={14} />
-                  </a>
+                  <div className="flex flex-col gap-2">
+                    {prefs.includes("whatsapp") && (
+                      <a 
+                        href={waLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white font-bold py-3 px-4 rounded-xl text-sm transition shadow-sm focus:outline-none"
+                      >
+                        <MessageSquare size={16} />
+                        <span>Enviar WhatsApp al dueño</span>
+                        <ExternalLink size={12} />
+                      </a>
+                    )}
+                    
+                    {prefs.includes("llamadas") && (
+                      <a 
+                        href={`tel:${rawPhone}`}
+                        className="w-full flex items-center justify-center gap-2 bg-ml-blue hover:bg-ml-blue-hover text-white font-bold py-3 px-4 rounded-xl text-sm transition shadow-sm focus:outline-none"
+                      >
+                        <Phone size={16} />
+                        <span>Llamar al dueño</span>
+                      </a>
+                    )}
+                    
+                    {prefs.includes("sms") && (
+                      <a 
+                        href={`sms:${rawPhone}`}
+                        className="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl text-sm transition shadow-sm focus:outline-none"
+                      >
+                        <MessageSquare size={16} />
+                        <span>Enviar SMS</span>
+                      </a>
+                    )}
+                    
+                    {prefs.includes("mail") && product.sellerEmail && (
+                      <a 
+                        href={`mailto:${product.sellerEmail}?subject=Mesira%20Argentina%20-%20Interés%20en%20tu%20publicación%20"${encodeURIComponent(product.title)}"`}
+                        className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition shadow-sm focus:outline-none"
+                      >
+                        <Mail size={16} />
+                        <span>Enviar Email</span>
+                      </a>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <button
