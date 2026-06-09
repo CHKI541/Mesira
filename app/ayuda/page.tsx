@@ -81,7 +81,7 @@ export default function AyudaPage() {
             <div>
               <h3 className="text-sm font-bold text-ml-dark">Límite de contactos automático</h3>
               <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                Las personas que busquen tu producto verán los detalles. Para contactarte, deberán presionar 'Contactar', lo que les revelará tu WhatsApp. Cuando <strong>3 personas distintas</strong> hagan click, tu publicación se desactivará inmediatamente para no molestarte con más llamados.
+                Las personas que busquen tu producto verán los detalles. Para contactarte, deberán presionar 'Contactar', lo que les revelará tu WhatsApp. Cuando se alcance el límite de contactos que elegiste al publicar (por defecto 3 de personas distintas), tu publicación se desactivará inmediatamente para no molestarte con más llamados.
               </p>
             </div>
           </div>
