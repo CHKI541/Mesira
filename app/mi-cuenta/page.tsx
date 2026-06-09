@@ -10,6 +10,7 @@ import {
   getSellerProducts, 
   createProduct, 
   reactivateProduct, 
+  deactivateProduct,
   deleteProduct, 
   uploadProductImage,
   Product 
@@ -25,9 +26,24 @@ import {
   Trash2,
   RefreshCw,
   Clock,
-  Sparkles
+  Sparkles,
+  PowerOff
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+
+const AVAILABLE_CATEGORIES = [
+  { value: "ropa", label: "Ropa" },
+  { value: "muebles", label: "Muebles" },
+  { value: "electronica", label: "Electrónica" },
+  { value: "bazar", label: "Bazar" },
+  { value: "herramientas", label: "Herramientas" },
+  { value: "farmacia", label: "Farmacia" },
+  { value: "accesorios para vehiculos", label: "Accesorios para vehículos" },
+  { value: "bebes", label: "Bebés" },
+  { value: "juguetes", label: "Juguetes" },
+  { value: "libros", label: "Libros" },
+  { value: "kodesh y judaica", label: "Kodesh y Judaica" }
+];
 
 function MiCuentaContent() {
   const { 
@@ -59,6 +75,7 @@ function MiCuentaContent() {
   const [prefLlamadas, setPrefLlamadas] = useState(true);
   const [prefSMS, setPrefSMS] = useState(false);
   const [prefMail, setPrefMail] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   
   // Dashboard states
   const [myProducts, setMyProducts] = useState<Product[]>([]);
@@ -148,6 +165,10 @@ function MiCuentaContent() {
       return setDashboardError("Por favor, seleccioná al menos una preferencia de contacto.");
     }
     
+    if (selectedCategories.length === 0) {
+      return setDashboardError("Por favor, seleccioná al menos una categoría para tu producto.");
+    }
+    
     if (!imageFile) return setDashboardError("Por favor, subí una foto de tu producto.");
     if (neighborhood === "Otro" && !customNeighborhood.trim()) {
       return setDashboardError("Por favor, ingresá el nombre del barrio.");
@@ -171,7 +192,8 @@ function MiCuentaContent() {
         sellerPhone: user.phone,
         sellerEmail: user.email,
         maxContacts: maxContacts,
-        contactPreferences: preferences
+        contactPreferences: preferences,
+        categories: selectedCategories
       });
 
       // 3. Clear form
@@ -187,6 +209,7 @@ function MiCuentaContent() {
       setPrefLlamadas(true);
       setPrefSMS(false);
       setPrefMail(false);
+      setSelectedCategories([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
       setSuccessMessage("¡Tu producto fue publicado con éxito en Mesira Argentina!");
@@ -215,6 +238,25 @@ function MiCuentaContent() {
       );
     } catch (err) {
       setDashboardError("No se pudo reactivar la publicación.");
+    }
+  };
+
+  // Deactivate handler
+  const handleDeactivate = async (id: string) => {
+    if (!confirm("¿Estás seguro de que querés desactivar esta publicación? Dejará de mostrarse en el feed público de inmediato.")) return;
+    setDashboardError(null);
+    try {
+      await deactivateProduct(id);
+      setMyProducts(prev => 
+        prev.map(p => {
+          if (p.id === id) {
+            return { ...p, isActive: false, deactivatedAt: Date.now() };
+          }
+          return p;
+        })
+      );
+    } catch (err) {
+      setDashboardError("No se pudo desactivar la publicación.");
     }
   };
 
@@ -446,6 +488,42 @@ function MiCuentaContent() {
                   <AlertTriangle size={14} className="shrink-0 mt-0.5" />
                   <span>Recomendación: Describe tu producto detalladamente para evitar que te contacten sin motivo.</span>
                 </p>
+              </div>
+
+              {/* Categorías */}
+              <div>
+                <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">
+                  Categoría del producto (Podés seleccionar varias)
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-gray-50/50 border border-gray-150 rounded-xl p-3.5">
+                  {AVAILABLE_CATEGORIES.map((cat) => {
+                    const isChecked = selectedCategories.includes(cat.value);
+                    return (
+                      <label 
+                        key={cat.value} 
+                        className={`flex items-center gap-2 p-2 rounded-lg border text-xs font-semibold cursor-pointer select-none transition ${
+                          isChecked 
+                            ? "bg-cyan-50/40 border-cyan-300 text-cyan-800" 
+                            : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked} 
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedCategories(prev => [...prev, cat.value]);
+                            } else {
+                              setSelectedCategories(prev => prev.filter(c => c !== cat.value));
+                            }
+                          }}
+                          className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500/20 w-4 h-4 cursor-pointer"
+                        />
+                        <span>{cat.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Condition & Neighborhood */}
@@ -729,7 +807,16 @@ function MiCuentaContent() {
                         <span>Ver</span>
                       </a>
 
-                      {isDeactivated && (
+                      {!isDeactivated ? (
+                        <button
+                          onClick={() => handleDeactivate(prod.id)}
+                          className="flex items-center gap-1 border border-amber-200 hover:bg-amber-50 text-amber-600 hover:border-amber-300 rounded text-xs px-3 py-2 font-bold transition"
+                          title="Desactivar publicación"
+                        >
+                          <PowerOff size={14} />
+                          <span>Desactivar</span>
+                        </button>
+                      ) : (
                         <button
                           onClick={() => handleReactivate(prod.id)}
                           className="flex items-center gap-1 bg-ml-blue hover:bg-ml-blue-hover text-white rounded text-xs px-3 py-2 font-bold transition shadow-sm"

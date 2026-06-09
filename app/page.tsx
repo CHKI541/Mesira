@@ -19,7 +19,9 @@ import {
   X,
   PlusCircle,
   HelpCircle,
-  Loader2
+  Loader2,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 
 // Inner Home component containing search and filter logic
@@ -34,10 +36,28 @@ function HomeContent() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Active filters in local state (synced with URL for search)
+  // Accordion open states (closed by default)
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
+  const [isNeighborhoodsOpen, setIsNeighborhoodsOpen] = useState(false);
+  const [isConditionsOpen, setIsConditionsOpen] = useState(false);
+
+  // Parse active filters from URL
   const searchQuery = searchParams.get("q") || "";
-  const filterNeighborhood = searchParams.get("barrio") || "Todos";
-  const filterCondition = searchParams.get("estado") || "Todos";
+  const activeCategories = searchParams.get("categorias") ? searchParams.get("categorias")!.split(",") : [];
+  const activeNeighborhoods = searchParams.get("barrios") ? searchParams.get("barrios")!.split(",") : [];
+  const activeConditions = searchParams.get("estados") ? searchParams.get("estados")!.split(",") : [];
+
+  // Temporary local states for filter selection (applied on button click)
+  const [tempCategories, setTempCategories] = useState<string[]>([]);
+  const [tempNeighborhoods, setTempNeighborhoods] = useState<string[]>([]);
+  const [tempConditions, setTempConditions] = useState<string[]>([]);
+
+  // Sync temporary state with URL search params whenever they change
+  useEffect(() => {
+    setTempCategories(activeCategories);
+    setTempNeighborhoods(activeNeighborhoods);
+    setTempConditions(activeConditions);
+  }, [searchParams]);
 
   // Load products based on query & filters
   useEffect(() => {
@@ -47,8 +67,9 @@ function HomeContent() {
       try {
         const data = await getProducts({
           searchQuery,
-          neighborhood: filterNeighborhood !== "Todos" ? filterNeighborhood : undefined,
-          condition: filterCondition !== "Todos" ? filterCondition : undefined
+          categories: activeCategories.length > 0 ? activeCategories : undefined,
+          neighborhoods: activeNeighborhoods.length > 0 ? activeNeighborhoods : undefined,
+          conditions: activeConditions.length > 0 ? activeConditions : undefined
         });
         setProducts(data);
       } catch (err) {
@@ -59,21 +80,71 @@ function HomeContent() {
       }
     }
     fetchFeed();
-  }, [searchQuery, filterNeighborhood, filterCondition]);
+  }, [searchQuery, searchParams]);
 
-  // Handle setting filters
-  const updateFilters = (key: string, value: string) => {
+  const handleApplyFilters = () => {
     const params = new URLSearchParams(searchParams.toString());
-    if (value && value !== "Todos") {
-      params.set(key, value);
+    
+    if (tempCategories.length > 0) {
+      params.set("categorias", tempCategories.join(","));
     } else {
-      params.delete(key);
+      params.delete("categorias");
+    }
+
+    if (tempNeighborhoods.length > 0) {
+      params.set("barrios", tempNeighborhoods.join(","));
+    } else {
+      params.delete("barrios");
+    }
+
+    if (tempConditions.length > 0) {
+      params.set("estados", tempConditions.join(","));
+    } else {
+      params.delete("estados");
+    }
+
+    router.push(`/?${params.toString()}`);
+  };
+
+  const handleRemoveCategory = (cat: string) => {
+    const nextCats = activeCategories.filter(c => c !== cat);
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextCats.length > 0) {
+      params.set("categorias", nextCats.join(","));
+    } else {
+      params.delete("categorias");
+    }
+    router.push(`/?${params.toString()}`);
+  };
+
+  const handleRemoveNeighborhood = (barrio: string) => {
+    const nextBarrios = activeNeighborhoods.filter(b => b !== barrio);
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextBarrios.length > 0) {
+      params.set("barrios", nextBarrios.join(","));
+    } else {
+      params.delete("barrios");
+    }
+    router.push(`/?${params.toString()}`);
+  };
+
+  const handleRemoveCondition = (cond: string) => {
+    const nextConds = activeConditions.filter(c => c !== cond);
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextConds.length > 0) {
+      params.set("estados", nextConds.join(","));
+    } else {
+      params.delete("estados");
     }
     router.push(`/?${params.toString()}`);
   };
 
   const handleClearAllFilters = () => {
-    router.push("/");
+    const params = new URLSearchParams();
+    if (searchQuery) {
+      params.set("q", searchQuery);
+    }
+    router.push(`/${params.toString() ? `?${params.toString()}` : ""}`);
   };
 
   // Group products by day (Google Photos style)
@@ -97,10 +168,8 @@ function HomeContent() {
       } else if (dateStr === yesterday) {
         label = "Ayer";
       } else {
-        // Format as e.g. "8 de Junio"
         const day = itemDate.getDate();
         const month = itemDate.toLocaleDateString("es-AR", { month: "long" });
-        // Capitalize month name
         const capitalizedMonth = month.charAt(0).toUpperCase() + month.slice(1);
         label = `${day} de ${capitalizedMonth}`;
       }
@@ -117,9 +186,23 @@ function HomeContent() {
   const groupedProducts = groupProductsByDate(products);
   const groupedKeys = Object.keys(groupedProducts);
 
-  const neighborhoods = ["Todos", "Flores", "Once", "Barracas", "Belgrano", "Palermo", "Villa Crespo", "Otro"];
-  const conditions = [
-    { value: "Todos", label: "Todos los estados" },
+  const AVAILABLE_CATEGORIES = [
+    { value: "ropa", label: "Ropa" },
+    { value: "muebles", label: "Muebles" },
+    { value: "electronica", label: "Electrónica" },
+    { value: "bazar", label: "Bazar" },
+    { value: "herramientas", label: "Herramientas" },
+    { value: "farmacia", label: "Farmacia" },
+    { value: "accesorios para vehiculos", label: "Accesorios para vehículos" },
+    { value: "bebes", label: "Bebés" },
+    { value: "juguetes", label: "Juguetes" },
+    { value: "libros", label: "Libros" },
+    { value: "kodesh y judaica", label: "Kodesh y Judaica" }
+  ];
+
+  const AVAILABLE_NEIGHBORHOODS = ["Flores", "Once", "Barracas", "Belgrano", "Palermo", "Villa Crespo", "Otro"];
+
+  const AVAILABLE_CONDITIONS = [
     { value: "perfecto", label: "Perfecto estado" },
     { value: "buen", label: "Buen estado" },
     { value: "funcional", label: "Estado funcional" },
@@ -130,9 +213,8 @@ function HomeContent() {
     <div className="flex-1 flex flex-col md:flex-row gap-5">
       {/* Filters Sidebar */}
       <aside className="w-full md:w-56 shrink-0 flex flex-col gap-4">
-        
-        {/* Active Search & Filters Info */}
-        {(searchQuery || filterNeighborhood !== "Todos" || filterCondition !== "Todos") && (
+                {/* Active Search & Filters Info */}
+        {(searchQuery || activeCategories.length > 0 || activeNeighborhoods.length > 0 || activeConditions.length > 0) && (
           <div className="bg-white border border-ml-border rounded p-4 shadow-sm">
             <div className="flex items-center justify-between mb-3.5">
               <h3 className="text-xs font-bold text-ml-dark uppercase tracking-wider">Filtros activos</h3>
@@ -145,7 +227,7 @@ function HomeContent() {
             </div>
             <div className="flex flex-wrap gap-1.5">
               {searchQuery && (
-                <span className="inline-flex items-center gap-1 bg-gray-100 text-ml-dark text-[10px] font-semibold px-2 py-1 rounded border border-gray-200 max-w-full">
+                <span className="inline-flex items-center gap-1 bg-gray-150 text-ml-dark text-[10px] font-semibold px-2 py-1 rounded border border-gray-200 max-w-full">
                   <span className="truncate">"{searchQuery}"</span>
                   <button onClick={() => {
                     const params = new URLSearchParams(searchParams.toString());
@@ -156,77 +238,190 @@ function HomeContent() {
                   </button>
                 </span>
               )}
-              {filterNeighborhood !== "Todos" && (
-                <span className="inline-flex items-center gap-1 bg-gray-100 text-ml-dark text-[10px] font-semibold px-2 py-1 rounded border border-gray-200">
-                  <span>{filterNeighborhood}</span>
-                  <button onClick={() => updateFilters("barrio", "Todos")}>
+              {activeCategories.map((cat) => (
+                <span key={cat} className="inline-flex items-center gap-1 bg-gray-100 text-ml-dark text-[10px] font-semibold px-2 py-1 rounded border border-gray-200">
+                  <span>{AVAILABLE_CATEGORIES.find(c => c.value === cat)?.label || cat}</span>
+                  <button onClick={() => handleRemoveCategory(cat)}>
                     <X size={10} className="text-gray-400 hover:text-red-500" />
                   </button>
                 </span>
-              )}
-              {filterCondition !== "Todos" && (
-                <span className="inline-flex items-center gap-1 bg-gray-100 text-ml-dark text-[10px] font-semibold px-2 py-1 rounded border border-gray-200">
-                  <span>{conditions.find(c => c.value === filterCondition)?.label}</span>
-                  <button onClick={() => updateFilters("estado", "Todos")}>
+              ))}
+              {activeNeighborhoods.map((barrio) => (
+                <span key={barrio} className="inline-flex items-center gap-1 bg-gray-100 text-ml-dark text-[10px] font-semibold px-2 py-1 rounded border border-gray-200">
+                  <span>{barrio === "Otro" ? "Otros barrios" : barrio}</span>
+                  <button onClick={() => handleRemoveNeighborhood(barrio)}>
                     <X size={10} className="text-gray-400 hover:text-red-500" />
                   </button>
                 </span>
-              )}
+              ))}
+              {activeConditions.map((cond) => (
+                <span key={cond} className="inline-flex items-center gap-1 bg-gray-100 text-ml-dark text-[10px] font-semibold px-2 py-1 rounded border border-gray-200">
+                  <span>{AVAILABLE_CONDITIONS.find(c => c.value === cond)?.label || cond}</span>
+                  <button onClick={() => handleRemoveCondition(cond)}>
+                    <X size={10} className="text-gray-400 hover:text-red-500" />
+                  </button>
+                </span>
+              ))}
             </div>
           </div>
         )}
 
         {/* Filtering Card */}
         <div className="bg-white border border-ml-border rounded shadow-sm overflow-hidden divide-y divide-gray-100">
-          <div className="p-4 flex items-center gap-2 text-ml-dark">
+          <div className="p-4 flex items-center gap-2 text-ml-dark bg-gray-50/50">
             <SlidersHorizontal size={16} className="text-gray-400" />
             <h2 className="text-xs font-bold uppercase tracking-wider">Filtrar por</h2>
           </div>
 
+          {/* Filter by Categories */}
+          <div className="flex flex-col">
+            <button 
+              onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
+              className="w-full text-left p-4 flex items-center justify-between text-xs font-bold text-ml-dark uppercase tracking-wider hover:bg-gray-50 transition"
+            >
+              <span className="flex items-center gap-1.5">
+                <Tag size={13} className="text-gray-400" />
+                <span>Categorías</span>
+                {tempCategories.length > 0 && (
+                  <span className="bg-cyan-100 text-cyan-800 text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1 select-none">
+                    {tempCategories.length}
+                  </span>
+                )}
+              </span>
+              {isCategoriesOpen ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+            </button>
+            
+            {isCategoriesOpen && (
+              <div className="px-4 pb-4 pt-1 flex flex-col gap-2 max-h-48 overflow-y-auto pr-1 no-scrollbar animate-in slide-in-from-top duration-150">
+                {AVAILABLE_CATEGORIES.map((cat) => {
+                  const isChecked = tempCategories.includes(cat.value);
+                  return (
+                    <label 
+                      key={cat.value} 
+                      className="flex items-center gap-2.5 text-xs text-gray-600 hover:text-ml-dark cursor-pointer select-none py-0.5"
+                    >
+                      <input 
+                        type="checkbox" 
+                        checked={isChecked}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setTempCategories(prev => [...prev, cat.value]);
+                          } else {
+                            setTempCategories(prev => prev.filter(c => c !== cat.value));
+                          }
+                        }}
+                        className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500/20 w-3.5 h-3.5 cursor-pointer"
+                      />
+                      <span>{cat.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           {/* Filter by Neighborhood */}
-          <div className="p-4">
-            <span className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-2.5 flex items-center gap-1">
-              <MapPin size={13} className="text-gray-400" />
-              <span>Barrio</span>
-            </span>
-            <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-1 no-scrollbar">
-              {neighborhoods.map((barrio) => (
-                <button
-                  key={barrio}
-                  onClick={() => updateFilters("barrio", barrio)}
-                  className={`text-left text-xs py-0.5 hover:text-ml-blue hover:underline transition-all ${
-                    filterNeighborhood === barrio 
-                      ? "text-ml-blue font-bold" 
-                      : "text-gray-500 font-normal"
-                  }`}
-                >
-                  {barrio === "Todos" ? "Todos los barrios" : barrio === "Otro" ? "Otros barrios" : barrio}
-                </button>
-              ))}
-            </div>
+          <div className="flex flex-col">
+            <button 
+              onClick={() => setIsNeighborhoodsOpen(!isNeighborhoodsOpen)}
+              className="w-full text-left p-4 flex items-center justify-between text-xs font-bold text-ml-dark uppercase tracking-wider hover:bg-gray-50 transition"
+            >
+              <span className="flex items-center gap-1.5">
+                <MapPin size={13} className="text-gray-400" />
+                <span>Barrios</span>
+                {tempNeighborhoods.length > 0 && (
+                  <span className="bg-cyan-100 text-cyan-800 text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1 select-none">
+                    {tempNeighborhoods.length}
+                  </span>
+                )}
+              </span>
+              {isNeighborhoodsOpen ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+            </button>
+            
+            {isNeighborhoodsOpen && (
+              <div className="px-4 pb-4 pt-1 flex flex-col gap-2 max-h-48 overflow-y-auto pr-1 no-scrollbar animate-in slide-in-from-top duration-150">
+                {AVAILABLE_NEIGHBORHOODS.map((barrio) => {
+                  const isChecked = tempNeighborhoods.includes(barrio);
+                  return (
+                    <label 
+                      key={barrio} 
+                      className="flex items-center gap-2.5 text-xs text-gray-600 hover:text-ml-dark cursor-pointer select-none py-0.5"
+                    >
+                      <input 
+                        type="checkbox" 
+                        checked={isChecked}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setTempNeighborhoods(prev => [...prev, barrio]);
+                          } else {
+                            setTempNeighborhoods(prev => prev.filter(b => b !== barrio));
+                          }
+                        }}
+                        className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500/20 w-3.5 h-3.5 cursor-pointer"
+                      />
+                      <span>{barrio === "Otro" ? "Otros barrios" : barrio}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Filter by Condition */}
-          <div className="p-4">
-            <span className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-2.5 flex items-center gap-1">
-              <Tag size={13} className="text-gray-400" />
-              <span>Estado</span>
-            </span>
-            <div className="flex flex-col gap-1.5">
-              {conditions.map((cond) => (
-                <button
-                  key={cond.value}
-                  onClick={() => updateFilters("estado", cond.value)}
-                  className={`text-left text-xs py-0.5 hover:text-ml-blue hover:underline transition-all ${
-                    filterCondition === cond.value 
-                      ? "text-ml-blue font-bold" 
-                      : "text-gray-500 font-normal"
-                  }`}
-                >
-                  {cond.label}
-                </button>
-              ))}
-            </div>
+          <div className="flex flex-col">
+            <button 
+              onClick={() => setIsConditionsOpen(!isConditionsOpen)}
+              className="w-full text-left p-4 flex items-center justify-between text-xs font-bold text-ml-dark uppercase tracking-wider hover:bg-gray-50 transition"
+            >
+              <span className="flex items-center gap-1.5">
+                <SlidersHorizontal size={13} className="text-gray-400" />
+                <span>Estado</span>
+                {tempConditions.length > 0 && (
+                  <span className="bg-cyan-100 text-cyan-800 text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1 select-none">
+                    {tempConditions.length}
+                  </span>
+                )}
+              </span>
+              {isConditionsOpen ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+            </button>
+            
+            {isConditionsOpen && (
+              <div className="px-4 pb-4 pt-2 flex flex-col gap-2 animate-in slide-in-from-top duration-150">
+                {AVAILABLE_CONDITIONS.map((cond) => {
+                  const isChecked = tempConditions.includes(cond.value);
+                  return (
+                    <label 
+                      key={cond.value} 
+                      className="flex items-center gap-2.5 text-xs text-gray-600 hover:text-ml-dark cursor-pointer select-none py-0.5"
+                    >
+                      <input 
+                        type="checkbox" 
+                        checked={isChecked}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setTempConditions(prev => [...prev, cond.value]);
+                          } else {
+                            setTempConditions(prev => prev.filter(c => c !== cond.value));
+                          }
+                        }}
+                        className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500/20 w-3.5 h-3.5 cursor-pointer"
+                      />
+                      <span>{cond.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Apply Filters Button */}
+          <div className="p-3 bg-gray-50/40">
+            <button 
+              onClick={handleApplyFilters}
+              className="w-full bg-ml-blue hover:bg-ml-blue-hover text-white text-xs font-bold py-2 px-4 rounded shadow-sm transition flex items-center justify-center gap-1.5"
+            >
+              <span>Aplicar filtros</span>
+            </button>
           </div>
         </div>
 

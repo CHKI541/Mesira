@@ -38,6 +38,7 @@ export interface Product {
   viewedUserIds?: string[];
   contactPreferences?: string[];
   sellerEmail?: string;
+  categories?: string[];
 }
 
 // User Profile Type definition
@@ -259,8 +260,9 @@ export const uploadProductImage = async (file: File): Promise<string> => {
 
 // 3. Products Retrieval with sorting & filtering
 export interface FilterOptions {
-  neighborhood?: string;
-  condition?: string;
+  categories?: string[];
+  neighborhoods?: string[];
+  conditions?: string[];
   searchQuery?: string;
 }
 
@@ -294,17 +296,24 @@ export const getProducts = async (filters?: FilterOptions): Promise<Product[]> =
 
     // Apply filters and search query on the result set
     if (filters) {
-      const { neighborhood, condition, searchQuery } = filters;
+      const { categories, neighborhoods, conditions, searchQuery } = filters;
 
-      if (neighborhood && neighborhood !== "Todos") {
+      if (categories && categories.length > 0) {
         results = results.filter(p => 
-          p.neighborhood.toLowerCase() === neighborhood.toLowerCase() || 
-          (p.neighborhood === "Otro" && p.customNeighborhood?.toLowerCase() === neighborhood.toLowerCase())
+          p.categories && p.categories.some(cat => categories.includes(cat))
         );
       }
 
-      if (condition && condition !== "Todos") {
-        results = results.filter(p => p.condition === condition);
+      if (neighborhoods && neighborhoods.length > 0 && !neighborhoods.includes("Todos")) {
+        const lowerNeighborhoods = neighborhoods.map(n => n.toLowerCase());
+        results = results.filter(p => 
+          lowerNeighborhoods.includes(p.neighborhood.toLowerCase()) || 
+          (p.neighborhood === "Otro" && p.customNeighborhood && lowerNeighborhoods.includes(p.customNeighborhood.toLowerCase()))
+        );
+      }
+
+      if (conditions && conditions.length > 0 && !conditions.includes("Todos")) {
+        results = results.filter(p => conditions.includes(p.condition));
       }
 
       if (searchQuery && searchQuery.trim() !== "") {
@@ -338,17 +347,24 @@ export const getProducts = async (filters?: FilterOptions): Promise<Product[]> =
 
     // Filter by options
     if (filters) {
-      const { neighborhood, condition, searchQuery } = filters;
+      const { categories, neighborhoods, conditions, searchQuery } = filters;
 
-      if (neighborhood && neighborhood !== "Todos") {
+      if (categories && categories.length > 0) {
         results = results.filter(p => 
-          p.neighborhood.toLowerCase() === neighborhood.toLowerCase() || 
-          (p.neighborhood === "Otro" && p.customNeighborhood?.toLowerCase() === neighborhood.toLowerCase())
+          p.categories && p.categories.some(cat => categories.includes(cat))
         );
       }
 
-      if (condition && condition !== "Todos") {
-        results = results.filter(p => p.condition === condition);
+      if (neighborhoods && neighborhoods.length > 0 && !neighborhoods.includes("Todos")) {
+        const lowerNeighborhoods = neighborhoods.map(n => n.toLowerCase());
+        results = results.filter(p => 
+          lowerNeighborhoods.includes(p.neighborhood.toLowerCase()) || 
+          (p.neighborhood === "Otro" && p.customNeighborhood && lowerNeighborhoods.includes(p.customNeighborhood.toLowerCase()))
+        );
+      }
+
+      if (conditions && conditions.length > 0 && !conditions.includes("Todos")) {
+        results = results.filter(p => conditions.includes(p.condition));
       }
 
       if (searchQuery && searchQuery.trim() !== "") {
@@ -608,6 +624,26 @@ export const reactivateProduct = async (id: string): Promise<Product> => {
 
     saveMockProducts(products);
     return products[index];
+  }
+};
+
+// 6b. Deactivate Product
+export const deactivateProduct = async (id: string): Promise<void> => {
+  const now = new Date();
+  if (isFirebaseConfigured) {
+    const docRef = doc(db, "products", id);
+    await updateDoc(docRef, {
+      isActive: false,
+      deactivatedAt: now
+    });
+  } else {
+    const products = getMockProducts();
+    const index = products.findIndex(p => p.id === id);
+    if (index !== -1) {
+      products[index].isActive = false;
+      products[index].deactivatedAt = now.getTime();
+      saveMockProducts(products);
+    }
   }
 };
 
