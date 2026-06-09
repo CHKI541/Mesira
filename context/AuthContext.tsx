@@ -14,7 +14,7 @@ interface AuthContextType {
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   logOut: () => Promise<void>;
-  completeRegistrationDetails: (name: string, lastName: string, phone: string) => Promise<void>;
+  completeRegistrationDetails: (name: string, lastName: string, phone: string, email?: string) => Promise<void>;
   isOnboardingCompleted: boolean;
   setIsOnboardingCompleted: (val: boolean) => void;
   isFirebaseActive: boolean;
@@ -172,12 +172,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Complete registration fields (marked as verified immediately)
-  const completeRegistrationDetails = async (name: string, lastName: string, phone: string) => {
+  const completeRegistrationDetails = async (name: string, lastName: string, phone: string, email?: string) => {
     if (!user) throw new Error("No user is logged in");
 
     // Save profile to database directly with isPhoneVerified: true
     const finalProfile = await saveUserProfile(user.uid, {
-      email: user.email || "",
+      email: email || user.email || "",
       name,
       lastName,
       phone,
@@ -189,6 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name,
       lastName,
       phone,
+      email: email || user.email || "",
       isPhoneVerified: true,
       createdAt: finalProfile.createdAt
     };

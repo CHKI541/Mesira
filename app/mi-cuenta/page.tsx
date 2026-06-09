@@ -60,14 +60,15 @@ function MiCuentaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Tab state: 'publicar' | 'mis-publicaciones' | 'perfil'
-  const [activeTab, setActiveTab] = useState<'publicar' | 'mis-publicaciones' | 'perfil'>('publicar');
+  // Tab state: 'perfil' | 'mis-publicaciones' | 'publicar'
+  const [activeTab, setActiveTab] = useState<'perfil' | 'mis-publicaciones' | 'publicar'>('perfil');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Profile edit states
   const [profileName, setProfileName] = useState("");
   const [profileLastName, setProfileLastName] = useState("");
   const [profilePhone, setProfilePhone] = useState("");
+  const [profileEmail, setProfileEmail] = useState("");
   const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -146,6 +147,7 @@ function MiCuentaContent() {
         setProfileName(user.name || "");
         setProfileLastName(user.lastName || "");
         setProfilePhone(user.phone ? user.phone.replace("+549", "") : "");
+        setProfileEmail(user.email || "");
         // Pre-fill publication contact number (if not already modified)
         setPubPhone(prev => prev || (user.phone ? user.phone.replace("+549", "") : ""));
       }
@@ -159,6 +161,10 @@ function MiCuentaContent() {
 
     if (!profileName.trim()) return setProfileError("Ingresá tu nombre.");
     if (!profileLastName.trim()) return setProfileError("Ingresá tu apellido.");
+    if (!profileEmail.trim()) return setProfileError("Ingresá tu email.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileEmail)) {
+      return setProfileError("Por favor, ingresá un correo electrónico válido.");
+    }
     if (!/^\d{10}$/.test(profilePhone)) {
       return setProfileError("El número de celular debe tener exactamente 10 dígitos (Ej: 1134567890).");
     }
@@ -166,7 +172,7 @@ function MiCuentaContent() {
     const fullPhone = `+549${profilePhone}`;
     setProfileLoading(true);
     try {
-      await completeRegistrationDetails(profileName.trim(), profileLastName.trim(), fullPhone);
+      await completeRegistrationDetails(profileName.trim(), profileLastName.trim(), fullPhone, profileEmail.trim());
       setProfileSuccess("¡Tus datos de perfil fueron actualizados con éxito!");
       setPubPhone(profilePhone);
     } catch (err: any) {
@@ -451,45 +457,64 @@ function MiCuentaContent() {
 
   // CASE 3: FULLY LOGGED IN AND COMPLETED
   return (
-    <>
-      {/* Tab Header Controls */}
-      <div className="flex border-b border-gray-200 mb-6 bg-white rounded-t border-t border-x border-ml-border overflow-hidden">
+    <div className="flex flex-col lg:flex-row gap-6 items-start">
+      {/* Left Column: Sidebar Navigation */}
+      <div className="w-full lg:w-64 shrink-0 bg-white border border-ml-border rounded-lg p-4 shadow-sm flex flex-col gap-2">
+        {/* User profile header */}
+        <div className="flex items-center gap-3 p-2 mb-2 border-b border-gray-100">
+          <div className="w-10 h-10 rounded-full bg-cyan-50 text-ml-blue flex items-center justify-center font-bold text-sm shrink-0 uppercase select-none">
+            {user.name ? user.name[0] : (user.email ? user.email[0] : "U")}
+          </div>
+          <div className="min-w-0">
+            <h4 className="text-xs font-bold text-ml-dark truncate">
+              {user.name ? `${user.name} ${user.lastName}`.trim() : "Usuario"}
+            </h4>
+            <p className="text-[10px] text-gray-400 truncate">
+              {user.email}
+            </p>
+          </div>
+        </div>
+
+        {/* Sidebar Tab buttons */}
         <button
-          onClick={() => setActiveTab("publicar")}
-          className={`flex-1 md:flex-initial flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-bold border-b-2 transition-all focus:outline-none ${
-            activeTab === "publicar" 
-              ? "border-[#0043C6] text-[#0043C6] bg-white border-b-3" 
-              : "border-transparent text-gray-500 hover:text-ml-dark hover:bg-gray-50/50"
+          onClick={() => setActiveTab("perfil")}
+          className={`w-full flex items-center gap-2.5 px-4 py-3 text-xs font-bold rounded-lg transition-all focus:outline-none text-left ${
+            activeTab === "perfil" 
+              ? "bg-blue-50/50 text-[#0043C6]" 
+              : "text-gray-500 hover:text-ml-dark hover:bg-gray-50/50"
           }`}
         >
-          <PlusCircle size={18} />
-          <span>Publicar un producto</span>
-        </button>
-        
-        <button
-          onClick={() => setActiveTab("mis-publicaciones")}
-          className={`flex-1 md:flex-initial flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-bold border-b-2 transition-all focus:outline-none ${
-            activeTab === "mis-publicaciones" 
-              ? "border-[#0043C6] text-[#0043C6] bg-white border-b-3" 
-              : "border-transparent text-gray-500 hover:text-ml-dark hover:bg-gray-50/50"
-          }`}
-        >
-          <FolderHeart size={18} />
-          <span>Mis Publicaciones</span>
+          <User size={16} />
+          <span>Mi Perfil</span>
         </button>
 
         <button
-          onClick={() => setActiveTab("perfil")}
-          className={`flex-1 md:flex-initial flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-bold border-b-2 transition-all focus:outline-none ${
-            activeTab === "perfil" 
-              ? "border-[#0043C6] text-[#0043C6] bg-white border-b-3" 
-              : "border-transparent text-gray-500 hover:text-ml-dark hover:bg-gray-50/50"
+          onClick={() => setActiveTab("mis-publicaciones")}
+          className={`w-full flex items-center gap-2.5 px-4 py-3 text-xs font-bold rounded-lg transition-all focus:outline-none text-left ${
+            activeTab === "mis-publicaciones" 
+              ? "bg-blue-50/50 text-[#0043C6]" 
+              : "text-gray-500 hover:text-ml-dark hover:bg-gray-50/50"
           }`}
         >
-          <User size={18} />
-          <span>Mi Perfil</span>
+          <FolderHeart size={16} />
+          <span>Productos publicados</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("publicar")}
+          className={`w-full flex items-center gap-2.5 px-4 py-3 text-xs font-bold rounded-lg transition-all focus:outline-none text-left ${
+            activeTab === "publicar" 
+              ? "bg-blue-50/50 text-[#0043C6]" 
+              : "text-gray-500 hover:text-ml-dark hover:bg-gray-50/50"
+          }`}
+        >
+          <PlusCircle size={16} />
+          <span>Publicar producto</span>
         </button>
       </div>
+
+      {/* Right Column: Content Area */}
+      <div className="flex-1 w-full">
 
       {dashboardError && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm p-4 rounded mb-6 flex items-start gap-2.5">
@@ -989,6 +1014,16 @@ function MiCuentaContent() {
                 Código de área sin el 0 y número celular sin el 15. Debe tener exactamente 10 dígitos.
               </p>
             </div>
+            <div>
+              <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">Email de contacto</label>
+              <input
+                type="email"
+                required
+                value={profileEmail}
+                onChange={(e) => setProfileEmail(e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-ml-dark focus:outline-none focus:border-ml-blue"
+              />
+            </div>
             <button
               type="submit"
               disabled={profileLoading}
@@ -1000,7 +1035,8 @@ function MiCuentaContent() {
           </form>
         </div>
       )}
-    </>
+      </div>
+    </div>
   );
 }
 
