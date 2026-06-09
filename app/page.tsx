@@ -49,6 +49,8 @@ function HomeContent() {
   const activeNeighborhoods = searchParams.get("barrios") ? searchParams.get("barrios")!.split(",") : [];
   const activeConditions = searchParams.get("estados") ? searchParams.get("estados")!.split(",") : [];
 
+  const isFiltering = searchQuery.trim() !== "" || activeCategories.length > 0 || activeNeighborhoods.length > 0 || activeConditions.length > 0;
+
   // Temporary local states for filter selection (applied on button click)
   const [tempCategories, setTempCategories] = useState<string[]>([]);
   const [tempNeighborhoods, setTempNeighborhoods] = useState<string[]>([]);
@@ -435,7 +437,7 @@ function HomeContent() {
           <div className="p-3 bg-gray-50/40">
             <button 
               onClick={handleApplyFilters}
-              className="w-full bg-ml-blue hover:bg-ml-blue-hover text-white text-xs font-bold py-2 px-4 rounded shadow-sm transition flex items-center justify-center gap-1.5"
+              className="w-full bg-[#0043C6] hover:bg-[#0036A3] text-white text-xs font-bold py-2 px-4 rounded shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <span>Aplicar filtros</span>
             </button>
@@ -490,7 +492,7 @@ function HomeContent() {
             <div className="flex flex-col sm:flex-row gap-2 justify-center">
               <button
                 onClick={handleClearAllFilters}
-                className="bg-ml-blue hover:bg-ml-blue-hover text-white px-5 py-2.5 rounded font-bold text-xs shadow-sm transition"
+                className="bg-[#0043C6] hover:bg-[#0036A3] text-white px-5 py-2.5 rounded font-bold text-xs shadow-sm transition cursor-pointer"
               >
                 Ver todas las publicaciones
               </button>
@@ -506,22 +508,63 @@ function HomeContent() {
           </div>
         ) : (
           <div className="space-y-8">
-            {groupedKeys.map((dayLabel) => (
-              <div key={dayLabel} className="animate-in fade-in duration-300">
-                <h2 className="text-lg font-black text-ml-dark mb-4 border-b border-gray-200/60 pb-1 flex items-baseline gap-2">
-                  {dayLabel}
-                  <span className="text-xs font-normal text-gray-400">
-                    ({groupedProducts[dayLabel].length} {groupedProducts[dayLabel].length === 1 ? "producto" : "productos"})
-                  </span>
-                </h2>
-                
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {groupedProducts[dayLabel].map((prod) => (
-                    <ProductCard key={prod.id} product={prod} />
-                  ))}
+            {!isFiltering ? (
+              <div className="flex flex-col lg:flex-row gap-6">
+                {/* Left side: Featured Products */}
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg font-black text-[#002366] mb-4 border-b border-gray-200/60 pb-1 flex items-baseline gap-2 select-none">
+                    Artículos Destacados Hoy
+                    <span className="text-xs font-normal text-gray-400">
+                      ({Math.min(products.length, 2)})
+                    </span>
+                  </h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    {products.slice(0, 2).map((prod) => (
+                      <ProductCard key={prod.id} product={prod} />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Right side: Novedades */}
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg font-black text-[#002366] mb-4 border-b border-gray-200/60 pb-1 flex items-baseline gap-2 select-none">
+                    Novedades
+                    <span className="text-xs font-normal text-gray-400">
+                      ({Math.max(0, products.length - 2)})
+                    </span>
+                  </h2>
+                  {products.length <= 2 ? (
+                    <div className="bg-white rounded-lg border border-ml-border p-6 text-center text-xs text-gray-400 shadow-sm">
+                      No hay más novedades hoy.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4">
+                      {products.slice(2).map((prod) => (
+                        <ProductCard key={prod.id} product={prod} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
-            ))}
+            ) : (
+              // Grouped by date layout for search/filtered results
+              groupedKeys.map((dayLabel) => (
+                <div key={dayLabel} className="animate-in fade-in duration-300">
+                  <h2 className="text-lg font-black text-ml-dark mb-4 border-b border-gray-200/60 pb-1 flex items-baseline gap-2">
+                    {dayLabel}
+                    <span className="text-xs font-normal text-gray-400">
+                      ({groupedProducts[dayLabel].length} {groupedProducts[dayLabel].length === 1 ? "producto" : "productos"})
+                    </span>
+                  </h2>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {groupedProducts[dayLabel].map((prod) => (
+                      <ProductCard key={prod.id} product={prod} />
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
       </section>
