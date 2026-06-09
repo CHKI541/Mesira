@@ -48,7 +48,7 @@ const HeaderContent: React.FC<HeaderProps> = ({ onOpenAuthModal }) => {
       <div className="flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5 focus:outline-none group">
           {/* Logo Icon */}
-          <div className="p-1.5 bg-emerald-50 rounded-lg group-hover:bg-emerald-100/80 transition-colors">
+          <div className="p-1.5 bg-cyan-50 rounded-lg group-hover:bg-cyan-100/80 transition-colors">
             <svg 
               viewBox="0 0 24 24" 
               fill="none" 
@@ -196,7 +196,7 @@ const HeaderFallback: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
       <div className="flex items-center gap-2.5">
-        <div className="p-1.5 bg-emerald-50 rounded-lg">
+        <div className="p-1.5 bg-cyan-50 rounded-lg">
           <svg 
             viewBox="0 0 24 24" 
             fill="none" 

@@ -231,9 +231,9 @@ function HomeContent() {
         </div>
 
         {/* Quick Info Box */}
-        <div className="bg-emerald-50/50 border border-emerald-200 rounded-xl p-4 shadow-sm text-xs text-emerald-800 leading-relaxed">
+        <div className="bg-cyan-50/50 border border-cyan-200 rounded-xl p-4 shadow-sm text-xs text-cyan-800 leading-relaxed">
           <h4 className="font-bold mb-1.5 flex items-center gap-1">
-            <Sparkles size={14} className="text-emerald-600" />
+            <Sparkles size={14} className="text-cyan-600" />
             ¿Cómo funciona?
           </h4>
           <p className="mb-2">Publicá gratis artículos que no uses.</p>
@@ -346,8 +346,8 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-ml-bg flex flex-col pb-16 relative overflow-hidden">
       {/* Decorative ambient background blur blobs */}
-      <div className="absolute top-20 right-[-10%] w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute top-[40%] left-[-10%] w-[500px] h-[500px] bg-teal-500/5 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute top-20 right-[-10%] w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute top-[40%] left-[-10%] w-[500px] h-[500px] bg-sky-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
       <Header onOpenAuthModal={() => setIsAuthOpen(true)} />
       

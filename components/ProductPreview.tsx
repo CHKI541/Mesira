@@ -23,7 +23,7 @@ export const ProductPreview: React.FC<ProductPreviewProps> = ({
       case "perfecto":
         return { text: "Excelente", bg: "bg-green-50 text-green-700 border-green-200" };
       case "buen":
-        return { text: "Buen estado", bg: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+        return { text: "Buen estado", bg: "bg-cyan-50 text-cyan-700 border-cyan-200" };
       case "funcional":
         return { text: "Funcional", bg: "bg-amber-50 text-amber-700 border-amber-200" };
       case "reparar":

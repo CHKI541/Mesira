@@ -88,7 +88,7 @@ export default function AyudaPage() {
         <div className="bg-white rounded-lg border border-ml-border divide-y divide-gray-150 shadow-sm mb-8">
           {/* Step 1 */}
           <div className="p-5 flex gap-4">
-            <div className="shrink-0 font-black text-xl text-ml-blue bg-emerald-50 w-8 h-8 rounded-full flex items-center justify-center">1</div>
+            <div className="shrink-0 font-black text-xl text-ml-blue bg-cyan-50 w-8 h-8 rounded-full flex items-center justify-center">1</div>
             <div>
               <h3 className="text-sm font-bold text-ml-dark">Iniciás sesión y completás tus datos</h3>
               <p className="text-xs text-gray-500 mt-1 leading-relaxed">
@@ -99,7 +99,7 @@ export default function AyudaPage() {
           
           {/* Step 2 */}
           <div className="p-5 flex gap-4">
-            <div className="shrink-0 font-black text-xl text-ml-blue bg-emerald-50 w-8 h-8 rounded-full flex items-center justify-center">2</div>
+            <div className="shrink-0 font-black text-xl text-ml-blue bg-cyan-50 w-8 h-8 rounded-full flex items-center justify-center">2</div>
             <div>
               <h3 className="text-sm font-bold text-ml-dark">Publicás gratis en segundos</h3>
               <p className="text-xs text-gray-500 mt-1 leading-relaxed">
@@ -110,7 +110,7 @@ export default function AyudaPage() {
 
           {/* Step 3 */}
           <div className="p-5 flex gap-4">
-            <div className="shrink-0 font-black text-xl text-ml-blue bg-emerald-50 w-8 h-8 rounded-full flex items-center justify-center">3</div>
+            <div className="shrink-0 font-black text-xl text-ml-blue bg-cyan-50 w-8 h-8 rounded-full flex items-center justify-center">3</div>
             <div>
               <h3 className="text-sm font-bold text-ml-dark">Límite de contactos automático</h3>
               <p className="text-xs text-gray-500 mt-1 leading-relaxed">
@@ -121,7 +121,7 @@ export default function AyudaPage() {
 
           {/* Step 4 */}
           <div className="p-5 flex gap-4">
-            <div className="shrink-0 font-black text-xl text-ml-blue bg-emerald-50 w-8 h-8 rounded-full flex items-center justify-center">4</div>
+            <div className="shrink-0 font-black text-xl text-ml-blue bg-cyan-50 w-8 h-8 rounded-full flex items-center justify-center">4</div>
             <div>
               <h3 className="text-sm font-bold text-ml-dark">Vigencia y borrado automático</h3>
               <p className="text-xs text-gray-500 mt-1 leading-relaxed">
