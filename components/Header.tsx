@@ -46,13 +46,50 @@ const HeaderContent: React.FC<HeaderProps> = ({ onOpenAuthModal }) => {
     <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-2.5">
       {/* Left: Logo */}
       <div className="flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-1.5 focus:outline-none">
-          <span className="text-2xl font-black italic tracking-tighter text-ml-blue select-none">
-            Mesira
-          </span>
-          <span className="bg-ml-blue text-white text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
-            Argentina
-          </span>
+        <Link href="/" className="flex items-center gap-2.5 focus:outline-none group">
+          {/* Logo Icon */}
+          <div className="p-1.5 bg-indigo-50 rounded-lg group-hover:bg-indigo-100/80 transition-colors">
+            <svg 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="w-6 h-6 text-ml-blue transition-transform duration-300 group-hover:scale-105"
+            >
+              {/* Box body */}
+              <path 
+                d="M4 11C4 9.89543 4.89543 9 6 9H18C19.1046 9 20 9.89543 20 11V18C20 19.1046 19.1046 20 18 20H6C4.89543 20 4 19.1046 4 18V11Z" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinejoin="round"
+              />
+              {/* Lid horizontal line */}
+              <path d="M3 11H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              {/* Vertical ribbon */}
+              <path d="M12 9V20" stroke="currentColor" strokeWidth="2" />
+              {/* Heart loops as ribbon bows */}
+              <path 
+                d="M12 9C12 9 9.5 6 9.5 4.5C9.5 3.11929 10.6193 2 12 2C13.3807 2 14.5 3.11929 14.5 4.5C14.5 6 12 9 12 9Z" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinejoin="round" 
+              />
+              <path 
+                d="M12 9C12 9 14.5 6 14.5 4.5C14.5 3.11929 13.3807 2 12 2C10.6193 2 9.5 3.11929 9.5 4.5C9.5 6 12 9 12 9Z" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinejoin="round" 
+              />
+            </svg>
+          </div>
+          
+          <div className="flex flex-col">
+            <span className="text-xl font-extrabold tracking-tight text-ml-dark group-hover:text-ml-blue transition-colors select-none leading-none">
+              Mesira
+            </span>
+            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest leading-none mt-0.5">
+              Argentina
+            </span>
+          </div>
         </Link>
         
         {/* Mobile User/Action Indicators */}
@@ -158,13 +195,44 @@ const HeaderContent: React.FC<HeaderProps> = ({ onOpenAuthModal }) => {
 const HeaderFallback: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
-      <div className="flex items-center gap-1.5">
-        <span className="text-2xl font-black italic tracking-tighter text-ml-blue select-none">
-          Mesira
-        </span>
-        <span className="bg-ml-blue text-white text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
-          Argentina
-        </span>
+      <div className="flex items-center gap-2.5">
+        <div className="p-1.5 bg-indigo-50 rounded-lg">
+          <svg 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            xmlns="http://www.w3.org/2000/svg" 
+            className="w-6 h-6 text-ml-blue"
+          >
+            <path 
+              d="M4 11C4 9.89543 4.89543 9 6 9H18C19.1046 9 20 9.89543 20 11V18C20 19.1046 19.1046 20 18 20H6C4.89543 20 4 19.1046 4 18V11Z" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinejoin="round"
+            />
+            <path d="M3 11H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <path d="M12 9V20" stroke="currentColor" strokeWidth="2" />
+            <path 
+              d="M12 9C12 9 9.5 6 9.5 4.5C9.5 3.11929 10.6193 2 12 2C13.3807 2 14.5 3.11929 14.5 4.5C14.5 6 12 9 12 9Z" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinejoin="round" 
+            />
+            <path 
+              d="M12 9C12 9 14.5 6 14.5 4.5C14.5 3.11929 13.3807 2 12 2C10.6193 2 9.5 3.11929 9.5 4.5C9.5 6 12 9 12 9Z" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinejoin="round" 
+            />
+          </svg>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-xl font-extrabold tracking-tight text-ml-dark select-none leading-none">
+            Mesira
+          </span>
+          <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest leading-none mt-0.5">
+            Argentina
+          </span>
+        </div>
       </div>
       <div className="flex-1 max-w-2xl h-9 bg-gray-200 rounded animate-pulse"></div>
       <div className="h-5 w-24 bg-gray-250 rounded animate-pulse"></div>
@@ -177,7 +245,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
   const { user } = useAuth();
   
   return (
-    <header className="sticky top-0 z-40 w-full bg-ml-yellow border-b border-ml-border py-2 px-4 shadow-sm">
+    <header className="sticky top-0 z-40 w-full bg-ml-yellow border-b border-ml-border py-3 md:py-4 px-4 shadow-sm">
       <Suspense fallback={<HeaderFallback />}>
         <HeaderContent {...props} />
       </Suspense>
