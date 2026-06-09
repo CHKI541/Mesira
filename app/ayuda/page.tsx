@@ -23,19 +23,6 @@ import {
 export default function AyudaPage() {
   const { user, isOnboardingCompleted, setIsOnboardingCompleted } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [activeFaq, setActiveFaq] = useState<number | null>(null);
-
-  const toggleFaq = (index: number) => {
-    setActiveFaq(activeFaq === index ? null : index);
-  };
-
-  const faqs = [
-    {
-      q: "¿Tengo que pagar algo por usar Mesira?",
-      a: "No, Mesira es 100% gratuita. Está prohibida la venta de productos en la plataforma.",
-      icon: <Heart className="text-pink-500" size={18} />
-    }
-  ];
 
   return (
     <div className="min-h-screen bg-ml-bg flex flex-col pb-12">
@@ -110,36 +97,6 @@ export default function AyudaPage() {
             </div>
           </div>
         </div>
-
-        {/* FAQ Section */}
-        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Preguntas Frecuentes (FAQ)</h2>
-        
-        <div className="bg-white rounded-lg border border-ml-border divide-y divide-gray-100 shadow-sm mb-6">
-          {faqs.map((faq, index) => {
-            const isOpen = activeFaq === index;
-            return (
-              <div key={index} className="overflow-hidden">
-                <button
-                  onClick={() => toggleFaq(index)}
-                  className="w-full flex items-center justify-between p-4 text-left font-semibold text-sm text-ml-dark hover:bg-gray-50 focus:outline-none transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    {faq.icon}
-                    <span>{faq.q}</span>
-                  </div>
-                  {isOpen ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
-                </button>
-                
-                {isOpen && (
-                  <div className="px-10 pb-4 text-xs text-gray-500 leading-relaxed bg-gray-50/50 animate-in slide-in-from-top-1 duration-150">
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
         {/* Spacer */}
         <div className="h-8"></div>
       </main>
