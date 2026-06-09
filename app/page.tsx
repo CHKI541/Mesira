@@ -243,42 +243,8 @@ function HomeContent() {
             Ver más en Ayuda →
           </Link>
         </div>
-      </aside>
-
-      {/* Products Feed Area */}
+      </aside>      {/* Products Feed Area */}
       <section className="flex-1">
-        {/* Welcome Hero Banner */}
-        <div className="mb-6 relative overflow-hidden rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-500/8 via-purple-500/5 to-pink-500/8 p-6 shadow-sm">
-          {/* Decorative glowing gradient shapes behind */}
-          <div className="absolute -right-10 -top-10 w-40 h-40 bg-indigo-400/20 rounded-full blur-2xl"></div>
-          <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-purple-400/10 rounded-full blur-2xl"></div>
-          
-          <div className="relative z-10 max-w-2xl">
-            <div className="inline-flex items-center gap-1 bg-indigo-50 text-ml-blue text-[10px] font-bold px-2 py-0.5 rounded-full border border-indigo-100 uppercase tracking-wider mb-2.5">
-              <Sparkles size={11} className="animate-pulse" />
-              <span>Regalos gratis en Argentina</span>
-            </div>
-            <h1 className="text-xl md:text-2xl font-black text-slate-800 leading-tight">
-              Dale una segunda vida a lo que ya no usás
-            </h1>
-            <p className="text-xs text-slate-600 mt-2 leading-relaxed max-w-lg">
-              Publicá de forma simple, segura y 100% gratuita. Las publicaciones desaparecen automáticamente del feed público al recibir suficientes contactos de personas distintas para evitar molestias.
-            </p>
-            
-            <div className="flex flex-wrap gap-2 mt-4 text-[11px] font-bold text-slate-600">
-              <span className="flex items-center gap-1.5 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-slate-100 shadow-sm">
-                🛡️ Cero Spam
-              </span>
-              <span className="flex items-center gap-1.5 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-slate-100 shadow-sm">
-                💬 Contacto directo por WhatsApp
-              </span>
-              <span className="flex items-center gap-1.5 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-slate-100 shadow-sm">
-                🤝 100% Gratis e ilimitado
-              </span>
-            </div>
-          </div>
-        </div>
-
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 text-sm p-4 rounded mb-5 flex items-center gap-2">
             <AlertCircle size={18} />

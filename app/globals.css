@@ -4,20 +4,21 @@
   --color-ml-yellow: #f8fafc; /* Clean off-white/slate-50 for header */
   --color-ml-blue: #6366f1; /* Vibrant electric indigo */
   --color-ml-blue-hover: #4f46e5; /* Darker indigo for hover */
-  --color-ml-gray: #f1f5f9; /* Slate-100 gray */
+  --color-ml-gray: transparent; /* Transparent to let body gradient show */
   --color-ml-dark: #1e293b; /* Sleek slate-800 for text */
   --color-ml-green: #10b981; /* Emerald-500 for success/active states */
-  --color-ml-bg: #f8fafc; /* Slate-50 page content background */
+  --color-ml-bg: transparent; /* Transparent to let body gradient show */
   --color-ml-border: #e2e8f0; /* Slate-200 for thin borders */
 }
 
 :root {
-  --background: #f1f5f9; /* Slate-100 page background */
+  --background: transparent; /* Let body gradient show */
   --foreground: #1e293b; /* Slate-800 page text */
 }
 
 body {
-  background-color: var(--background);
+  background: linear-gradient(135deg, #fbfcfd 0%, #f4f6ff 50%, #fbf6fe 100%) no-repeat;
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   margin: 0;
