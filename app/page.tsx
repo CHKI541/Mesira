@@ -21,8 +21,35 @@ import {
   HelpCircle,
   Loader2,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Shirt,
+  Sofa,
+  Tv,
+  ShoppingBag,
+  Wrench,
+  Pill,
+  Car,
+  Baby,
+  Gamepad2,
+  BookOpen,
+  Flame
 } from "lucide-react";
+
+const CATEGORY_ICONS: Record<string, React.ComponentType<any>> = {
+  ropa: Shirt,
+  muebles: Sofa,
+  electronica: Tv,
+  bazar: ShoppingBag,
+  herramientas: Wrench,
+  farmacia: Pill,
+  "accesorios para vehiculos": Car,
+  bebes: Baby,
+  juguetes: Gamepad2,
+  libros: BookOpen,
+  "kodesh y judaica": Flame,
+  otro: Sparkles
+};
+
 
 // Inner Home component containing search and filter logic
 function HomeContent() {
@@ -289,7 +316,7 @@ function HomeContent() {
         <div className="bg-white border border-ml-border rounded shadow-sm overflow-hidden divide-y divide-gray-100">
           <div className="p-4 flex items-center gap-2 text-ml-dark bg-gray-50/50">
             <SlidersHorizontal size={16} className="text-gray-400" />
-            <h2 className="text-xs font-bold uppercase tracking-wider">Filtrar por</h2>
+            <h2 className="text-xs font-bold uppercase tracking-wider">Filtrar artículos</h2>
           </div>
 
           {/* Filter by Categories */}
@@ -311,13 +338,14 @@ function HomeContent() {
             </button>
             
             {isCategoriesOpen && (
-              <div className="px-4 pb-4 pt-1 flex flex-col gap-2 max-h-48 overflow-y-auto pr-1 no-scrollbar animate-in slide-in-from-top duration-150">
+              <div className="px-4 pb-4 pt-1 grid grid-cols-2 gap-x-3 gap-y-2.5 max-h-60 overflow-y-auto pr-1 no-scrollbar animate-in slide-in-from-top duration-150">
                 {AVAILABLE_CATEGORIES.map((cat) => {
                   const isChecked = tempCategories.includes(cat.value);
+                  const IconComp = CATEGORY_ICONS[cat.value] || Sparkles;
                   return (
                     <label 
                       key={cat.value} 
-                      className="flex items-center gap-2.5 text-xs text-gray-600 hover:text-ml-dark cursor-pointer select-none py-0.5"
+                      className="flex items-center gap-2 text-xs text-gray-600 hover:text-ml-dark cursor-pointer select-none py-0.5"
                     >
                       <input 
                         type="checkbox" 
@@ -329,9 +357,14 @@ function HomeContent() {
                             setTempCategories(prev => prev.filter(c => c !== cat.value));
                           }
                         }}
-                        className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500/20 w-3.5 h-3.5 cursor-pointer"
+                        className="sr-only"
                       />
-                      <span>{cat.label}</span>
+                      {isChecked ? (
+                        <IconComp size={15} className="text-[#0043C6] shrink-0" />
+                      ) : (
+                        <span className="w-3.5 h-3.5 border border-gray-300 rounded shrink-0 bg-white"></span>
+                      )}
+                      <span className={isChecked ? "font-semibold text-[#0043C6]" : ""}>{cat.label}</span>
                     </label>
                   );
                 })}
@@ -358,28 +391,28 @@ function HomeContent() {
             </button>
             
             {isNeighborhoodsOpen && (
-              <div className="px-4 pb-4 pt-1 flex flex-col gap-2 max-h-48 overflow-y-auto pr-1 no-scrollbar animate-in slide-in-from-top duration-150">
+              <div className="px-4 pb-4 pt-1.5 flex flex-wrap gap-x-3 gap-y-2 animate-in slide-in-from-top duration-150">
                 {AVAILABLE_NEIGHBORHOODS.map((barrio) => {
                   const isChecked = tempNeighborhoods.includes(barrio);
                   return (
-                    <label 
-                      key={barrio} 
-                      className="flex items-center gap-2.5 text-xs text-gray-600 hover:text-ml-dark cursor-pointer select-none py-0.5"
+                    <button 
+                      key={barrio}
+                      type="button"
+                      onClick={() => {
+                        if (isChecked) {
+                          setTempNeighborhoods(prev => prev.filter(b => b !== barrio));
+                        } else {
+                          setTempNeighborhoods(prev => [...prev, barrio]);
+                        }
+                      }}
+                      className={`text-xs select-none transition-colors duration-150 cursor-pointer ${
+                        isChecked 
+                          ? "text-[#0043C6] font-extrabold underline decoration-2 underline-offset-2" 
+                          : "text-gray-500 hover:text-ml-dark font-medium"
+                      }`}
                     >
-                      <input 
-                        type="checkbox" 
-                        checked={isChecked}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setTempNeighborhoods(prev => [...prev, barrio]);
-                          } else {
-                            setTempNeighborhoods(prev => prev.filter(b => b !== barrio));
-                          }
-                        }}
-                        className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500/20 w-3.5 h-3.5 cursor-pointer"
-                      />
-                      <span>{barrio === "Otro" ? "Otros barrios" : barrio}</span>
-                    </label>
+                      {barrio === "Otro" ? "Otros" : barrio}
+                    </button>
                   );
                 })}
               </div>
@@ -405,28 +438,32 @@ function HomeContent() {
             </button>
             
             {isConditionsOpen && (
-              <div className="px-4 pb-4 pt-2 flex flex-col gap-2 animate-in slide-in-from-top duration-150">
-                {AVAILABLE_CONDITIONS.map((cond) => {
-                  const isChecked = tempConditions.includes(cond.value);
+              <div className="px-4 pb-4 pt-2 flex flex-wrap gap-2 animate-in slide-in-from-top duration-150">
+                {[
+                  { label: "Nuevo", values: ["perfecto"] },
+                  { label: "Usado", values: ["buen", "funcional"] },
+                  { label: "Gratis", values: ["reparar"] }
+                ].map((pill) => {
+                  const isChecked = pill.values.every(val => tempConditions.includes(val));
                   return (
-                    <label 
-                      key={cond.value} 
-                      className="flex items-center gap-2.5 text-xs text-gray-600 hover:text-ml-dark cursor-pointer select-none py-0.5"
+                    <button
+                      key={pill.label}
+                      type="button"
+                      onClick={() => {
+                        if (isChecked) {
+                          setTempConditions(prev => prev.filter(c => !pill.values.includes(c)));
+                        } else {
+                          setTempConditions(prev => [...prev, ...pill.values]);
+                        }
+                      }}
+                      className={`px-3.5 py-1.5 text-xs font-bold rounded-full transition-all duration-150 border cursor-pointer ${
+                        isChecked
+                          ? "bg-[#0043C6] border-[#0043C6] text-white shadow-sm"
+                          : "bg-gray-100 border-transparent text-gray-600 hover:bg-gray-200"
+                      }`}
                     >
-                      <input 
-                        type="checkbox" 
-                        checked={isChecked}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setTempConditions(prev => [...prev, cond.value]);
-                          } else {
-                            setTempConditions(prev => prev.filter(c => c !== cond.value));
-                          }
-                        }}
-                        className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500/20 w-3.5 h-3.5 cursor-pointer"
-                      />
-                      <span>{cond.label}</span>
-                    </label>
+                      {pill.label}
+                    </button>
                   );
                 })}
               </div>
@@ -508,63 +545,72 @@ function HomeContent() {
           </div>
         ) : (
           <div className="space-y-8">
-            {!isFiltering ? (
-              <div className="flex flex-col lg:flex-row gap-6">
-                {/* Left side: Featured Products */}
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-black text-[#002366] mb-4 border-b border-gray-200/60 pb-1 flex items-baseline gap-2 select-none">
-                    Artículos Destacados Hoy
-                    <span className="text-xs font-normal text-gray-400">
-                      ({Math.min(products.length, 2)})
-                    </span>
-                  </h2>
-                  <div className="grid grid-cols-2 gap-4">
-                    {products.slice(0, 2).map((prod) => (
-                      <ProductCard key={prod.id} product={prod} />
-                    ))}
-                  </div>
-                </div>
+            {groupedKeys.map((dayLabel) => {
+              const dayProducts = groupedProducts[dayLabel];
+              const isTodayGroup = dayLabel === "Hoy";
 
-                {/* Right side: Novedades */}
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-black text-[#002366] mb-4 border-b border-gray-200/60 pb-1 flex items-baseline gap-2 select-none">
-                    Novedades
-                    <span className="text-xs font-normal text-gray-400">
-                      ({Math.max(0, products.length - 2)})
-                    </span>
-                  </h2>
-                  {products.length <= 2 ? (
-                    <div className="bg-white rounded-lg border border-ml-border p-6 text-center text-xs text-gray-400 shadow-sm">
-                      No hay más novedades hoy.
+              if (isTodayGroup && !isFiltering) {
+                return (
+                  <div key={dayLabel} className="animate-in fade-in duration-300">
+                    <div className="flex flex-col lg:flex-row gap-6">
+                      {/* Left side: Featured Products */}
+                      <div className="flex-1 min-w-0">
+                        <h2 className="text-lg font-black text-[#002366] mb-4 border-b border-gray-200/60 pb-1 flex items-baseline gap-2 select-none">
+                          Artículos Destacados Hoy
+                          <span className="text-xs font-normal text-gray-400">
+                            ({Math.min(dayProducts.length, 2)})
+                          </span>
+                        </h2>
+                        <div className="grid grid-cols-2 gap-4">
+                          {dayProducts.slice(0, 2).map((prod) => (
+                            <ProductCard key={prod.id} product={prod} />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Right side: Novedades */}
+                      <div className="flex-1 min-w-0">
+                        <h2 className="text-lg font-black text-[#002366] mb-4 border-b border-gray-200/60 pb-1 flex items-baseline gap-2 select-none">
+                          Novedades
+                          <span className="text-xs font-normal text-gray-400">
+                            ({Math.max(0, dayProducts.length - 2)})
+                          </span>
+                        </h2>
+                        {dayProducts.length <= 2 ? (
+                          <div className="bg-white rounded-lg border border-ml-border p-6 text-center text-xs text-gray-400 shadow-sm">
+                            No hay más novedades hoy.
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-4">
+                            {dayProducts.slice(2).map((prod) => (
+                              <ProductCard key={prod.id} product={prod} />
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-4">
-                      {products.slice(2).map((prod) => (
-                        <ProductCard key={prod.id} product={prod} />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              // Grouped by date layout for search/filtered results
-              groupedKeys.map((dayLabel) => (
+                  </div>
+                );
+              }
+
+              // Otherwise, render standard day block
+              return (
                 <div key={dayLabel} className="animate-in fade-in duration-300">
                   <h2 className="text-lg font-black text-ml-dark mb-4 border-b border-gray-200/60 pb-1 flex items-baseline gap-2">
                     {dayLabel}
                     <span className="text-xs font-normal text-gray-400">
-                      ({groupedProducts[dayLabel].length} {groupedProducts[dayLabel].length === 1 ? "producto" : "productos"})
+                      ({dayProducts.length} {dayProducts.length === 1 ? "producto" : "productos"})
                     </span>
                   </h2>
                   
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {groupedProducts[dayLabel].map((prod) => (
+                    {dayProducts.map((prod) => (
                       <ProductCard key={prod.id} product={prod} />
                     ))}
                   </div>
                 </div>
-              ))
-            )}
+              );
+            })}
           </div>
         )}
       </section>
