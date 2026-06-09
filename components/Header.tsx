@@ -93,14 +93,27 @@ const HeaderContent: React.FC<HeaderProps> = ({ onOpenAuthModal }) => {
         </Link>
         
         {/* Mobile User/Action Indicators */}
-        <div className="flex items-center gap-3 md:hidden">
-          {user && (
-            <Link href="/mi-cuenta" className="p-1 text-ml-dark hover:text-ml-blue transition">
-              <PlusCircle size={22} />
-            </Link>
+        <div className="flex items-center gap-2.5 md:hidden">
+          {user ? (
+            <>
+              <Link href="/mi-cuenta?tab=publicar" className="p-1 text-ml-dark hover:text-ml-blue transition" title="Publicar gratis">
+                <PlusCircle size={20} />
+              </Link>
+              <Link href="/mi-cuenta" className="p-1 text-ml-dark hover:text-ml-blue transition" title="Mi Cuenta">
+                <User size={20} />
+              </Link>
+            </>
+          ) : (
+            <button 
+              onClick={onOpenAuthModal}
+              className="p-1 text-ml-dark hover:text-ml-blue transition focus:outline-none" 
+              title="Ingresar / Registrarse"
+            >
+              <User size={20} />
+            </button>
           )}
-          <Link href="/ayuda" className="p-1 text-ml-dark hover:text-ml-blue transition">
-            <HelpCircle size={22} />
+          <Link href="/ayuda" className="p-1 text-ml-dark hover:text-ml-blue transition" title="Ayuda">
+            <HelpCircle size={20} />
           </Link>
         </div>
       </div>

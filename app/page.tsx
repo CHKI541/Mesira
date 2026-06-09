@@ -36,6 +36,7 @@ function HomeContent() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionOnboardingClosed, setSessionOnboardingClosed] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Accordion open states (closed by default)
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
@@ -214,9 +215,23 @@ function HomeContent() {
   return (
     <div className="flex-1 flex flex-col md:flex-row gap-5">
       {/* Filters Sidebar */}
-      <aside className="w-full md:w-56 shrink-0 flex flex-col gap-4">
-                {/* Active Search & Filters Info */}
-        {(searchQuery || activeCategories.length > 0 || activeNeighborhoods.length > 0 || activeConditions.length > 0) && (
+      <aside className="w-full md:w-56 shrink-0 flex flex-col gap-3">
+        {/* Mobile Filter Toggle Button */}
+        <button 
+          onClick={() => setShowMobileFilters(!showMobileFilters)}
+          className="md:hidden w-full flex items-center justify-center gap-2 bg-white border border-ml-border rounded-lg py-2.5 px-4 text-xs font-bold text-ml-dark shadow-sm hover:bg-gray-50 transition cursor-pointer"
+        >
+          <SlidersHorizontal size={14} className="text-gray-500" />
+          <span>{showMobileFilters ? "Ocultar filtros" : "Mostrar filtros"}</span>
+          {(activeCategories.length > 0 || activeNeighborhoods.length > 0 || activeConditions.length > 0) && (
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 ml-1"></span>
+          )}
+        </button>
+
+        {/* Collapsible Filters container (hidden on mobile by default, always visible on desktop) */}
+        <div className={`${showMobileFilters ? "flex" : "hidden"} md:flex flex-col gap-4 w-full`}>
+          {/* Active Search & Filters Info */}
+          {(searchQuery || activeCategories.length > 0 || activeNeighborhoods.length > 0 || activeConditions.length > 0) && (
           <div className="bg-white border border-ml-border rounded p-4 shadow-sm">
             <div className="flex items-center justify-between mb-3.5">
               <h3 className="text-xs font-bold text-ml-dark uppercase tracking-wider">Filtros activos</h3>
@@ -427,18 +442,19 @@ function HomeContent() {
           </div>
         </div>
 
-        {/* Quick Info Box */}
-        <div className="bg-cyan-50/50 border border-cyan-200 rounded-xl p-4 shadow-sm text-xs text-cyan-800 leading-relaxed">
-          <h4 className="font-bold mb-1.5 flex items-center gap-1">
-            <Sparkles size={14} className="text-cyan-600" />
-            ¿Cómo funciona?
-          </h4>
-          <p className="mb-2">Publicá gratis artículos que no uses.</p>
-          <p className="mb-2">Para evitar spam, cada producto se desactiva automáticamente al recibir el límite de contactos elegido (por defecto 3 de personas distintas).</p>
-          <p>Luego, las publicaciones desactivadas desaparecerán tras 48 horas.</p>
-          <Link href="/ayuda" className="font-bold text-ml-blue hover:underline mt-2.5 inline-block">
-            Ver más en Ayuda →
-          </Link>
+          {/* Quick Info Box */}
+          <div className="bg-cyan-50/50 border border-cyan-200 rounded-xl p-4 shadow-sm text-xs text-cyan-800 leading-relaxed">
+            <h4 className="font-bold mb-1.5 flex items-center gap-1">
+              <Sparkles size={14} className="text-cyan-600" />
+              ¿Cómo funciona?
+            </h4>
+            <p className="mb-2">Publicá gratis artículos que no uses.</p>
+            <p className="mb-2">Para evitar spam, cada producto se desactiva automáticamente al recibir el límite de contactos elegido (por defecto 3 de personas distintas).</p>
+            <p>Luego, las publicaciones desactivadas desaparecerán tras 48 horas.</p>
+            <Link href="/ayuda" className="font-bold text-ml-blue hover:underline mt-2.5 inline-block">
+              Ver más en Ayuda →
+            </Link>
+          </div>
         </div>
       </aside>      {/* Products Feed Area */}
       <section className="flex-1">
