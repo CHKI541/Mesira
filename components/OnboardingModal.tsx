@@ -50,9 +50,9 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
               <Clock size={20} />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-ml-dark">Baja automática a las 48 horas</h3>
+              <h3 className="text-sm font-bold text-ml-dark">Baja definitiva de desactivados</h3>
               <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
-                Para mantener el feed con productos reales y frescos, todas las publicaciones desaparecen del feed público después de <strong>48 horas</strong> de creadas.
+                Los productos desactivados (por límite de contactos o desactivación manual) siguen viéndose en el feed como "Desactivados" durante <strong>48 horas</strong> antes de ser eliminados por completo de la página.
               </p>
             </div>
           </div>

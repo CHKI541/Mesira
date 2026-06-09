@@ -10,6 +10,7 @@ import {
   query, 
   where, 
   orderBy, 
+  limit,
   Timestamp,
   increment
 } from "firebase/firestore";
@@ -51,6 +52,17 @@ export interface UserProfile {
   isPhoneVerified: boolean;
   createdAt: any;
 }
+
+// Helper to parse any Date, Timestamp, or numeric value to milliseconds
+export const parseDateToMillis = (dateVal: any): number => {
+  if (!dateVal) return 0;
+  if (typeof dateVal === "number") return dateVal;
+  if (dateVal instanceof Date) return dateVal.getTime();
+  if (dateVal && typeof dateVal.toDate === "function") return dateVal.toDate().getTime();
+  if (dateVal && typeof dateVal.seconds === "number") return dateVal.seconds * 1000;
+  const parsed = new Date(dateVal);
+  return isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+};
 
 // --- MOCK DATABASE IMPLEMENTATION (LOCAL STORAGE) ---
 const MOCK_STORAGE_KEY_PRODUCTS = "mesira_products_mock";
@@ -274,11 +286,11 @@ export const getProducts = async (filters?: FilterOptions): Promise<Product[]> =
     const productsRef = collection(db, "products");
     const cutoffTime = new Date(cutoffTimeMs);
 
-    // Query products created in the last 60 days (both active and inactive)
+    // Query products sorted by creation time with a safety limit to avoid index issues
     let q = query(
       productsRef,
-      where("createdAt", ">=", Timestamp.fromDate(cutoffTime)),
-      orderBy("createdAt", "desc")
+      orderBy("createdAt", "desc"),
+      limit(200)
     );
 
     const querySnapshot = await getDocs(q);
@@ -293,11 +305,14 @@ export const getProducts = async (filters?: FilterOptions): Promise<Product[]> =
       } as Product);
     });
 
-    // Filter out deactivated products older than 48 hours
+    // Filter out deactivated products older than 48 hours and active products older than 60 days in-memory
     results = results.filter(p => {
+      const createdTime = parseDateToMillis(p.createdAt);
+      if (createdTime < cutoffTimeMs) return false;
+
       if (p.isActive) return true;
       if (!p.deactivatedAt) return false;
-      const deactTime = p.deactivatedAt instanceof Timestamp ? p.deactivatedAt.toDate().getTime() : new Date(p.deactivatedAt).getTime();
+      const deactTime = parseDateToMillis(p.deactivatedAt);
       return (Date.now() - deactTime) < 48 * 60 * 60 * 1000;
     });
 
@@ -440,9 +455,7 @@ export const getSellerProducts = async (sellerId: string): Promise<Product[]> =>
     results = results.filter(p => {
       const isDeactivated = !p.isActive || p.contactCount >= (p.maxContacts || 3);
       if (isDeactivated) {
-        const deactTime = p.deactivatedAt
-          ? (p.deactivatedAt instanceof Timestamp ? p.deactivatedAt.toDate().getTime() : new Date(p.deactivatedAt).getTime())
-          : (p.createdAt instanceof Date ? p.createdAt.getTime() : new Date(p.createdAt).getTime());
+        const deactTime = p.deactivatedAt ? parseDateToMillis(p.deactivatedAt) : parseDateToMillis(p.createdAt);
         return deactTime >= fortyEightHoursAgo;
       }
       return true;
@@ -462,9 +475,7 @@ export const getSellerProducts = async (sellerId: string): Promise<Product[]> =>
     results = results.filter(p => {
       const isDeactivated = !p.isActive || p.contactCount >= (p.maxContacts || 3);
       if (isDeactivated) {
-        const deactTime = p.deactivatedAt
-          ? (typeof p.deactivatedAt === "number" ? p.deactivatedAt : new Date(p.deactivatedAt).getTime())
-          : (typeof p.createdAt === "number" ? p.createdAt : new Date(p.createdAt).getTime());
+        const deactTime = p.deactivatedAt ? parseDateToMillis(p.deactivatedAt) : parseDateToMillis(p.createdAt);
         return deactTime >= fortyEightHoursAgo;
       }
       return true;
