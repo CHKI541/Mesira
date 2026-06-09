@@ -9,8 +9,8 @@ service cloud.firestore {
     
     // Product rules
     match /products/{productId} {
-      // Allow reading products if they are active, or if the requester is the seller
-      allow read: if resource.data.isActive == true || (request.auth != null && resource.data.sellerId == request.auth.uid);
+      // Allow reading products (both active and inactive) publicly
+      allow read: if true;
       
       // Allow creation if the user is authenticated and is set as the seller
       allow create: if request.auth != null && request.resource.data.sellerId == request.auth.uid;
