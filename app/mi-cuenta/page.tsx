@@ -18,8 +18,7 @@ import {
   createAlert,
   deleteAlert,
   Alert,
-  getAllProductsAdmin,
-  getAllUsersAdmin,
+  getAdminDashboardData,
   deleteUserAdmin,
   UserProfile
 } from "@/lib/db";
@@ -158,15 +157,12 @@ function MiCuentaContent() {
       setLoadingAdminData(true);
       setDashboardError(null);
       try {
-        const [prods, usrs] = await Promise.all([
-          getAllProductsAdmin(),
-          getAllUsersAdmin()
-        ]);
-        setAdminProducts(prods);
-        setAdminUsers(usrs);
-      } catch (err) {
+        const { products, users } = await getAdminDashboardData(getIdToken);
+        setAdminProducts(products);
+        setAdminUsers(users);
+      } catch (err: any) {
         console.error("Error loading admin data:", err);
-        setDashboardError("No se pudieron cargar los datos de administración.");
+        setDashboardError(err.message || "No se pudieron cargar los datos de administración.");
       } finally {
         setLoadingAdminData(false);
       }

@@ -802,58 +802,42 @@ export const deleteAlert = async (id: string): Promise<void> => {
 
 // --- ADMIN FUNCTIONS ---
 
-export const getAllProductsAdmin = async (): Promise<Product[]> => {
+export const getAdminDashboardData = async (
+  getIdTokenFn: () => Promise<string>
+): Promise<{ products: Product[]; users: UserProfile[] }> => {
   if (isFirebaseConfigured) {
-    const productsRef = collection(db, "products");
-    const q = query(productsRef, orderBy("createdAt", "desc"), limit(500));
-    const querySnapshot = await getDocs(q);
-    const results: Product[] = [];
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      results.push({
-        ...data,
-        id: doc.id,
-        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : data.createdAt
-      } as Product);
+    const token = await getIdTokenFn();
+    const res = await fetch("/api/admin/dashboard", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
     });
-    return results;
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || "Error al cargar los datos de administración");
+    }
+
+    return await res.json();
   } else {
+    // Mock Mode
     const products = getMockProducts();
     products.sort((a, b) => {
       const timeA = typeof a.createdAt === "number" ? a.createdAt : new Date(a.createdAt).getTime();
       const timeB = typeof b.createdAt === "number" ? b.createdAt : new Date(b.createdAt).getTime();
       return timeB - timeA;
     });
-    return products;
-  }
-};
 
-export const getAllUsersAdmin = async (): Promise<UserProfile[]> => {
-  if (isFirebaseConfigured) {
-    const usersRef = collection(db, "users");
-    // Since Firebase doesn't enforce standard order without indexes on some tables, we query all and sort or rely on index if exists.
-    // Querying user list is straightforward.
-    const q = query(usersRef, orderBy("createdAt", "desc"));
-    const querySnapshot = await getDocs(q);
-    const results: UserProfile[] = [];
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      results.push({
-        ...data,
-        uid: doc.id,
-        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : data.createdAt
-      } as UserProfile);
-    });
-    return results;
-  } else {
     const usersMap = getMockUsers();
-    const results = Object.values(usersMap);
-    results.sort((a, b) => {
+    const users = Object.values(usersMap);
+    users.sort((a, b) => {
       const timeA = typeof a.createdAt === "number" ? a.createdAt : new Date(a.createdAt).getTime();
       const timeB = typeof b.createdAt === "number" ? b.createdAt : new Date(b.createdAt).getTime();
       return timeB - timeA;
     });
-    return results;
+
+    return { products, users };
   }
 };
 
