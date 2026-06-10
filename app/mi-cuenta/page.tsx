@@ -20,7 +20,10 @@ import {
   Alert,
   getAdminDashboardData,
   deleteUserAdmin,
-  UserProfile
+  UserProfile,
+  deactivateProductAdmin,
+  reactivateProductAdmin,
+  deleteProductAdmin
 } from "@/lib/db";
 import { 
   PlusCircle, 
@@ -153,7 +156,7 @@ function MiCuentaContent() {
   // Load admin data when in active tab and authenticated
   useEffect(() => {
     async function loadAdminData() {
-      if (!user || user.email !== "israel.chueke@gmail.com" || activeTab !== "administrar" || !isAdminAuthenticated) return;
+      if (!user || !user.email || !["israel.chueke@gmail.com", "eli2626cohen@gmail.com"].includes(user.email) || activeTab !== "administrar" || !isAdminAuthenticated) return;
       setLoadingAdminData(true);
       setDashboardError(null);
       try {
@@ -500,7 +503,15 @@ function MiCuentaContent() {
   const handleAdminPasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setAdminAuthError(null);
-    if (adminPassword === "541251") {
+    
+    let isValid = false;
+    if (user?.email === "israel.chueke@gmail.com" && adminPassword === "541251") {
+      isValid = true;
+    } else if (user?.email === "eli2626cohen@gmail.com" && adminPassword === "1850") {
+      isValid = true;
+    }
+
+    if (isValid) {
       setIsAdminAuthenticated(true);
       setAdminPassword("");
     } else {
@@ -512,28 +523,28 @@ function MiCuentaContent() {
     if (!confirm("¿Desactivar esta publicación de forma administrativa?")) return;
     setDashboardError(null);
     try {
-      await deactivateProduct(id);
+      await deactivateProductAdmin(id, getIdToken);
       setAdminProducts(prev => 
         prev.map(p => p.id === id ? { ...p, isActive: false, deactivatedAt: Date.now() } : p)
       );
       setSuccessMessage("Publicación desactivada.");
       setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err) {
-      setDashboardError("No se pudo desactivar la publicación.");
+    } catch (err: any) {
+      setDashboardError(err.message || "No se pudo desactivar la publicación.");
     }
   };
 
   const handleAdminReactivate = async (id: string) => {
     setDashboardError(null);
     try {
-      const updated = await reactivateProduct(id);
+      const updated = await reactivateProductAdmin(id, getIdToken);
       setAdminProducts(prev => 
         prev.map(p => p.id === id ? updated : p)
       );
       setSuccessMessage("Publicación reactivada.");
       setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err) {
-      setDashboardError("No se pudo reactivar la publicación.");
+    } catch (err: any) {
+      setDashboardError(err.message || "No se pudo reactivar la publicación.");
     }
   };
 
@@ -541,12 +552,12 @@ function MiCuentaContent() {
     if (!confirm("¿Eliminar esta publicación permanentemente de la plataforma?")) return;
     setDashboardError(null);
     try {
-      await deleteProduct(id, imageUrl);
+      await deleteProductAdmin(id, imageUrl, getIdToken);
       setAdminProducts(prev => prev.filter(p => p.id !== id));
       setSuccessMessage("Publicación eliminada.");
       setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err) {
-      setDashboardError("No se pudo eliminar la publicación.");
+    } catch (err: any) {
+      setDashboardError(err.message || "No se pudo eliminar la publicación.");
     }
   };
 
@@ -795,7 +806,7 @@ function MiCuentaContent() {
           <span>Mis Alertas</span>
         </button>
 
-        {user.email === "israel.chueke@gmail.com" && (
+        {user.email && ["israel.chueke@gmail.com", "eli2626cohen@gmail.com"].includes(user.email) && (
           <button
             onClick={() => setActiveTab("administrar")}
             className={`w-full flex items-center gap-2.5 px-4 py-3 text-xs font-bold rounded-lg transition-all focus:outline-none text-left border border-dashed border-red-200 hover:border-red-400 ${
@@ -1620,7 +1631,7 @@ function MiCuentaContent() {
       )}
 
       {/* TAB 5: ADMIN DASHBOARD */}
-      {activeTab === "administrar" && user.email === "israel.chueke@gmail.com" && (
+      {activeTab === "administrar" && ["israel.chueke@gmail.com", "eli2626cohen@gmail.com"].includes(user.email || "") && (
         <div className="bg-white border border-ml-border rounded-lg shadow-sm overflow-hidden p-6 w-full">
           {!isAdminAuthenticated ? (
             <div className="max-w-md mx-auto py-12 text-center">
@@ -1879,9 +1890,9 @@ function MiCuentaContent() {
                                   <td className="p-3.5 text-right">
                                     <button
                                       onClick={() => handleAdminDeleteUser(usr.uid, usr.email)}
-                                      disabled={usr.email === "israel.chueke@gmail.com"}
+                                      disabled={["israel.chueke@gmail.com", "eli2626cohen@gmail.com"].includes(usr.email)}
                                       className="p-1.5 border border-red-200 hover:bg-red-50 text-red-600 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                      title={usr.email === "israel.chueke@gmail.com" ? "No se puede eliminar al administrador principal" : "Eliminar usuario"}
+                                      title={["israel.chueke@gmail.com", "eli2626cohen@gmail.com"].includes(usr.email) ? "No se puede eliminar a un administrador" : "Eliminar usuario"}
                                     >
                                       <Trash2 size={13} />
                                     </button>

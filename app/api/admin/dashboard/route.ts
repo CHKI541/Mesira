@@ -17,7 +17,8 @@ export async function GET(request: Request) {
     }
 
     // Verify admin email
-    if (decodedToken.email !== "israel.chueke@gmail.com") {
+    const allowedAdmins = ["israel.chueke@gmail.com", "eli2626cohen@gmail.com"];
+    if (!allowedAdmins.includes(decodedToken.email || "")) {
       return NextResponse.json({ error: "No tienes permisos de administrador." }, { status: 403 });
     }
 

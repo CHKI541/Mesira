@@ -17,7 +17,8 @@ export async function DELETE(request: Request) {
     }
 
     // Check if the user is the administrator
-    if (decodedToken.email !== "israel.chueke@gmail.com") {
+    const allowedAdmins = ["israel.chueke@gmail.com", "eli2626cohen@gmail.com"];
+    if (!allowedAdmins.includes(decodedToken.email || "")) {
       return NextResponse.json({ error: "No tienes permisos de administrador." }, { status: 403 });
     }
 

@@ -13,6 +13,7 @@ service firebase.storage {
       // Fallback: only allow deletion for authenticated users (MVP level security)
       allow delete: if request.auth != null && 
         (request.auth.token.email == 'israel.chueke@gmail.com' ||
+         request.auth.token.email == 'eli2626cohen@gmail.com' ||
          request.auth.uid == resource.metadata["ownerId"] || 
          resource.metadata["ownerId"] == null);
     }

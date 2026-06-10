@@ -4,7 +4,9 @@ service cloud.firestore {
     
     // Admin helper function
     function isAdmin() {
-      return request.auth != null && request.auth.token.email == 'israel.chueke@gmail.com';
+      return request.auth != null && 
+        (request.auth.token.email == 'israel.chueke@gmail.com' || 
+         request.auth.token.email == 'eli2626cohen@gmail.com');
     }
     
     // User profile rules — only the owner or admin can read/write profiles

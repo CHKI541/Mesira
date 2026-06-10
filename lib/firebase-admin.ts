@@ -16,6 +16,7 @@ if (getApps().length === 0) {
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         privateKey: privateKey,
       }),
+      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "mesira-argentina.firebasestorage.app",
     });
   } catch (error) {
     console.error("Firebase admin initialization error:", error);

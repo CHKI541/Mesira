@@ -891,4 +891,78 @@ export const deleteUserAdmin = async (
   }
 };
 
+export const deactivateProductAdmin = async (
+  id: string,
+  getIdTokenFn: () => Promise<string>
+): Promise<void> => {
+  if (isFirebaseConfigured) {
+    const token = await getIdTokenFn();
+    const res = await fetch("/api/admin/products", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ id, action: "deactivate" })
+    });
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || "Error al desactivar el producto");
+    }
+  } else {
+    await deactivateProduct(id);
+  }
+};
+
+export const reactivateProductAdmin = async (
+  id: string,
+  getIdTokenFn: () => Promise<string>
+): Promise<Product> => {
+  if (isFirebaseConfigured) {
+    const token = await getIdTokenFn();
+    const res = await fetch("/api/admin/products", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ id, action: "reactivate" })
+    });
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || "Error al reactivar el producto");
+    }
+    const updated = await getProductById(id);
+    if (!updated) throw new Error("Producto no encontrado tras reactivación");
+    return updated;
+  } else {
+    return await reactivateProduct(id);
+  }
+};
+
+export const deleteProductAdmin = async (
+  id: string,
+  imageUrl: string,
+  getIdTokenFn: () => Promise<string>
+): Promise<void> => {
+  if (isFirebaseConfigured) {
+    const token = await getIdTokenFn();
+    const res = await fetch("/api/admin/products", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ id, imageUrl })
+    });
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || "Error al eliminar el producto");
+    }
+  } else {
+    await deleteProduct(id, imageUrl);
+  }
+};
+
+
 
