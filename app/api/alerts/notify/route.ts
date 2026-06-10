@@ -7,21 +7,24 @@ import { getFirestore } from 'firebase-admin/firestore';
 // Initialize firebase-admin safely
 let adminDb: any = null;
 try {
-  if (getApps().length === 0) {
-    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-    if (projectId && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+  if (projectId && clientEmail && privateKey) {
+    if (getApps().length === 0) {
       initializeApp({
         credential: cert({
           projectId,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+          clientEmail,
+          privateKey: privateKey.replace(/\\n/g, '\n'),
         }),
       });
-    } else {
-      initializeApp();
     }
+    adminDb = getFirestore();
+  } else {
+    console.warn("Firebase Admin credentials (FIREBASE_CLIENT_EMAIL or FIREBASE_PRIVATE_KEY) are missing in environment variables. Real-time Firebase alert matching is disabled on localhost.");
   }
-  adminDb = getFirestore();
 } catch (e) {
   console.warn("Firebase Admin failed to initialize or is not configured:", e);
 }
@@ -104,10 +107,12 @@ export async function POST(request: Request) {
     // Mode B: Firebase Mode (API reads from Firestore)
     else if (productId) {
       if (!adminDb) {
+        console.warn("Firebase Admin is not initialized. Skipping Firebase alert matching on localhost (no service account).");
         return NextResponse.json({ 
-          success: false, 
-          message: "Firebase Admin is not initialized. Cannot perform Firebase alert matching." 
-        }, { status: 500 });
+          success: true, 
+          message: "Firebase Admin is not initialized. Skipping Firebase alert matching on localhost (no service account).",
+          sentCount: 0 
+        });
       }
 
       // Fetch product
