@@ -18,6 +18,7 @@ interface AuthContextType {
   isOnboardingCompleted: boolean;
   setIsOnboardingCompleted: (val: boolean) => void;
   isFirebaseActive: boolean;
+  getIdToken: () => Promise<string>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,6 +47,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (typeof window !== "undefined" && user) {
       localStorage.setItem(`mesira_onboarding_completed_${user.uid}`, val ? "true" : "false");
     }
+  };
+
+  // Get current user ID token
+  const getIdToken = async (): Promise<string> => {
+    if (isFirebaseConfigured && auth && auth.currentUser) {
+      return await auth.currentUser.getIdToken(true);
+    }
+    return "mock-token-admin";
   };
 
   // Listen to Auth State
@@ -211,7 +220,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         completeRegistrationDetails,
         isOnboardingCompleted,
         setIsOnboardingCompleted: handleSetOnboardingCompleted,
-        isFirebaseActive: isFirebaseConfigured
+        isFirebaseActive: isFirebaseConfigured,
+        getIdToken
       }}
     >
       {children}

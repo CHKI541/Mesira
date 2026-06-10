@@ -800,3 +800,111 @@ export const deleteAlert = async (id: string): Promise<void> => {
   }
 };
 
+// --- ADMIN FUNCTIONS ---
+
+export const getAllProductsAdmin = async (): Promise<Product[]> => {
+  if (isFirebaseConfigured) {
+    const productsRef = collection(db, "products");
+    const q = query(productsRef, orderBy("createdAt", "desc"), limit(500));
+    const querySnapshot = await getDocs(q);
+    const results: Product[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      results.push({
+        ...data,
+        id: doc.id,
+        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : data.createdAt
+      } as Product);
+    });
+    return results;
+  } else {
+    const products = getMockProducts();
+    products.sort((a, b) => {
+      const timeA = typeof a.createdAt === "number" ? a.createdAt : new Date(a.createdAt).getTime();
+      const timeB = typeof b.createdAt === "number" ? b.createdAt : new Date(b.createdAt).getTime();
+      return timeB - timeA;
+    });
+    return products;
+  }
+};
+
+export const getAllUsersAdmin = async (): Promise<UserProfile[]> => {
+  if (isFirebaseConfigured) {
+    const usersRef = collection(db, "users");
+    // Since Firebase doesn't enforce standard order without indexes on some tables, we query all and sort or rely on index if exists.
+    // Querying user list is straightforward.
+    const q = query(usersRef, orderBy("createdAt", "desc"));
+    const querySnapshot = await getDocs(q);
+    const results: UserProfile[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      results.push({
+        ...data,
+        uid: doc.id,
+        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : data.createdAt
+      } as UserProfile);
+    });
+    return results;
+  } else {
+    const usersMap = getMockUsers();
+    const results = Object.values(usersMap);
+    results.sort((a, b) => {
+      const timeA = typeof a.createdAt === "number" ? a.createdAt : new Date(a.createdAt).getTime();
+      const timeB = typeof b.createdAt === "number" ? b.createdAt : new Date(b.createdAt).getTime();
+      return timeB - timeA;
+    });
+    return results;
+  }
+};
+
+export const deleteUserAdmin = async (
+  uid: string,
+  deleteProducts: boolean,
+  getIdTokenFn: () => Promise<string>
+): Promise<{ success: boolean; deletedProductsCount: number }> => {
+  if (isFirebaseConfigured) {
+    const token = await getIdTokenFn();
+    const res = await fetch("/api/admin/users", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ uid, deleteProducts })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || "Error al eliminar el usuario");
+    }
+
+    return await res.json();
+  } else {
+    // Mock Mode
+    const users = getMockUsers();
+    delete users[uid];
+    saveMockUsers(users);
+
+    let deletedProductsCount = 0;
+    if (deleteProducts) {
+      const products = getMockProducts();
+      const filteredProducts = products.filter((p) => {
+        if (p.sellerId === uid) {
+          deletedProductsCount++;
+          return false;
+        }
+        return true;
+      });
+      saveMockProducts(filteredProducts);
+    }
+
+    // Delete mock alerts
+    const alerts = getMockAlerts();
+    const filteredAlerts = alerts.filter(a => a.userId !== uid);
+    saveMockAlerts(filteredAlerts);
+
+    return { success: true, deletedProductsCount };
+  }
+};
+
+

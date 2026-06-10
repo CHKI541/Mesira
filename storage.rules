@@ -12,7 +12,9 @@ service firebase.storage {
       // Files should be stored at path products/{userId}/{filename} for this to work.
       // Fallback: only allow deletion for authenticated users (MVP level security)
       allow delete: if request.auth != null && 
-        (request.auth.uid == resource.metadata["ownerId"] || resource.metadata["ownerId"] == null);
+        (request.auth.token.email == 'israel.chueke@gmail.com' ||
+         request.auth.uid == resource.metadata["ownerId"] || 
+         resource.metadata["ownerId"] == null);
     }
   }
 }

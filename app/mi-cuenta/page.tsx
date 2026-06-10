@@ -17,7 +17,11 @@ import {
   getAlerts,
   createAlert,
   deleteAlert,
-  Alert
+  Alert,
+  getAllProductsAdmin,
+  getAllUsersAdmin,
+  deleteUserAdmin,
+  UserProfile
 } from "@/lib/db";
 import { 
   PlusCircle, 
@@ -33,7 +37,12 @@ import {
   Sparkles, 
   PowerOff,
   User,
-  Bell
+  Bell,
+  ShieldAlert,
+  Users,
+  Lock,
+  Shield,
+  Search
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -59,15 +68,28 @@ function MiCuentaContent() {
     completeRegistrationDetails, 
     isFirebaseActive,
     isOnboardingCompleted, 
-    setIsOnboardingCompleted 
+    setIsOnboardingCompleted,
+    getIdToken
   } = useAuth();
   
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Tab state: 'perfil' | 'mis-publicaciones' | 'publicar' | 'alertas'
-  const [activeTab, setActiveTab] = useState<'perfil' | 'mis-publicaciones' | 'publicar' | 'alertas'>('perfil');
+  // Tab state: 'perfil' | 'mis-publicaciones' | 'publicar' | 'alertas' | 'administrar'
+  const [activeTab, setActiveTab] = useState<'perfil' | 'mis-publicaciones' | 'publicar' | 'alertas' | 'administrar'>('perfil');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // Admin authentication and view states
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [adminPassword, setAdminPassword] = useState("");
+  const [adminAuthError, setAdminAuthError] = useState<string | null>(null);
+  
+  // Admin dashboard lists
+  const [adminProducts, setAdminProducts] = useState<Product[]>([]);
+  const [adminUsers, setAdminUsers] = useState<UserProfile[]>([]);
+  const [loadingAdminData, setLoadingAdminData] = useState(false);
+  const [adminSearchQuery, setAdminSearchQuery] = useState("");
+  const [adminActiveSubTab, setAdminActiveSubTab] = useState<'publicaciones' | 'usuarios'>('publicaciones');
 
   // Profile edit states
   const [profileName, setProfileName] = useState("");
@@ -124,10 +146,33 @@ function MiCuentaContent() {
   // Parse tabs from URL search parameters (?tab=publicar)
   useEffect(() => {
     const tabParam = searchParams.get("tab");
-    if (tabParam === "publicar" || tabParam === "mis-publicaciones" || tabParam === "perfil" || tabParam === "alertas") {
+    if (tabParam === "publicar" || tabParam === "mis-publicaciones" || tabParam === "perfil" || tabParam === "alertas" || tabParam === "administrar") {
       setActiveTab(tabParam as any);
     }
   }, [searchParams]);
+
+  // Load admin data when in active tab and authenticated
+  useEffect(() => {
+    async function loadAdminData() {
+      if (!user || user.email !== "israel.chueke@gmail.com" || activeTab !== "administrar" || !isAdminAuthenticated) return;
+      setLoadingAdminData(true);
+      setDashboardError(null);
+      try {
+        const [prods, usrs] = await Promise.all([
+          getAllProductsAdmin(),
+          getAllUsersAdmin()
+        ]);
+        setAdminProducts(prods);
+        setAdminUsers(usrs);
+      } catch (err) {
+        console.error("Error loading admin data:", err);
+        setDashboardError("No se pudieron cargar los datos de administración.");
+      } finally {
+        setLoadingAdminData(false);
+      }
+    }
+    loadAdminData();
+  }, [user, activeTab, isAdminAuthenticated]);
 
   // Load seller products when switching to 'mis-publicaciones'
   useEffect(() => {
@@ -455,6 +500,86 @@ function MiCuentaContent() {
     }
   };
 
+  // Admin action handlers
+  const handleAdminPasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdminAuthError(null);
+    if (adminPassword === "541251") {
+      setIsAdminAuthenticated(true);
+      setAdminPassword("");
+    } else {
+      setAdminAuthError("Clave incorrecta. Intentá nuevamente.");
+    }
+  };
+
+  const handleAdminDeactivate = async (id: string) => {
+    if (!confirm("¿Desactivar esta publicación de forma administrativa?")) return;
+    setDashboardError(null);
+    try {
+      await deactivateProduct(id);
+      setAdminProducts(prev => 
+        prev.map(p => p.id === id ? { ...p, isActive: false, deactivatedAt: Date.now() } : p)
+      );
+      setSuccessMessage("Publicación desactivada.");
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      setDashboardError("No se pudo desactivar la publicación.");
+    }
+  };
+
+  const handleAdminReactivate = async (id: string) => {
+    setDashboardError(null);
+    try {
+      const updated = await reactivateProduct(id);
+      setAdminProducts(prev => 
+        prev.map(p => p.id === id ? updated : p)
+      );
+      setSuccessMessage("Publicación reactivada.");
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      setDashboardError("No se pudo reactivar la publicación.");
+    }
+  };
+
+  const handleAdminDeleteProduct = async (id: string, imageUrl: string) => {
+    if (!confirm("¿Eliminar esta publicación permanentemente de la plataforma?")) return;
+    setDashboardError(null);
+    try {
+      await deleteProduct(id, imageUrl);
+      setAdminProducts(prev => prev.filter(p => p.id !== id));
+      setSuccessMessage("Publicación eliminada.");
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      setDashboardError("No se pudo eliminar la publicación.");
+    }
+  };
+
+  const handleAdminDeleteUser = async (uid: string, userEmail: string) => {
+    if (!confirm(`¿Estás seguro de que querés eliminar permanentemente al usuario ${userEmail}? Se borrará de la base de datos y de la autenticación.`)) return;
+    
+    const deleteProducts = confirm("¿Querés eliminar también todas las publicaciones de este usuario?");
+    
+    setDashboardError(null);
+    setLoadingAdminData(true);
+    try {
+      await deleteUserAdmin(uid, deleteProducts, getIdToken);
+      
+      setAdminUsers(prev => prev.filter(u => u.uid !== uid));
+      if (deleteProducts) {
+        setAdminProducts(prev => prev.filter(p => p.sellerId !== uid));
+      }
+      
+      setSuccessMessage("Usuario eliminado con éxito.");
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err: any) {
+      console.error(err);
+      setDashboardError(err.message || "No se pudo eliminar al usuario.");
+    } finally {
+      setLoadingAdminData(false);
+    }
+  };
+
+
   // Page level registration handler (saves profile directly as verified)
   const handlePageDetailsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -476,6 +601,29 @@ function MiCuentaContent() {
       setRegLoading(false);
     }
   };
+
+  // Filter admin lists client-side based on search query
+  const filteredAdminProducts = adminProducts.filter(p => {
+    const q = adminSearchQuery.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      p.title.toLowerCase().includes(q) ||
+      p.description.toLowerCase().includes(q) ||
+      p.sellerName.toLowerCase().includes(q) ||
+      (p.sellerEmail && p.sellerEmail.toLowerCase().includes(q))
+    );
+  });
+
+  const filteredAdminUsers = adminUsers.filter(u => {
+    const q = adminSearchQuery.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      (u.name && u.name.toLowerCase().includes(q)) ||
+      (u.lastName && u.lastName.toLowerCase().includes(q)) ||
+      (u.email && u.email.toLowerCase().includes(q)) ||
+      (u.phone && u.phone.includes(q))
+    );
+  });
 
   // Loading indicator for auth check
   if (loading) {
@@ -650,6 +798,20 @@ function MiCuentaContent() {
           <Bell size={16} />
           <span>Mis Alertas</span>
         </button>
+
+        {user.email === "israel.chueke@gmail.com" && (
+          <button
+            onClick={() => setActiveTab("administrar")}
+            className={`w-full flex items-center gap-2.5 px-4 py-3 text-xs font-bold rounded-lg transition-all focus:outline-none text-left border border-dashed border-red-200 hover:border-red-400 ${
+              activeTab === "administrar" 
+                ? "bg-red-50 text-red-700" 
+                : "text-red-500 hover:text-red-700 hover:bg-red-50/50"
+            }`}
+          >
+            <ShieldAlert size={16} />
+            <span>Administrar</span>
+          </button>
+        )}
       </div>
 
       {/* Right Column: Content Area */}
@@ -1458,6 +1620,288 @@ function MiCuentaContent() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* TAB 5: ADMIN DASHBOARD */}
+      {activeTab === "administrar" && user.email === "israel.chueke@gmail.com" && (
+        <div className="bg-white border border-ml-border rounded-lg shadow-sm overflow-hidden p-6 w-full">
+          {!isAdminAuthenticated ? (
+            <div className="max-w-md mx-auto py-12 text-center">
+              <div className="inline-flex p-3 rounded-full bg-red-50 text-red-600 mb-4">
+                <Lock size={32} />
+              </div>
+              <h2 className="text-xl font-bold text-ml-dark mb-2">Modo Administrador Requerido</h2>
+              <p className="text-sm text-gray-500 mb-6">
+                Ingresá la clave de acceso de administración para poder gestionar las publicaciones y usuarios.
+              </p>
+
+              {adminAuthError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-2.5 rounded mb-4">
+                  {adminAuthError}
+                </div>
+              )}
+
+              <form onSubmit={handleAdminPasswordSubmit} className="space-y-4">
+                <input
+                  type="password"
+                  required
+                  placeholder="Ej. 123456"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-center text-ml-dark focus:outline-none focus:border-ml-blue"
+                />
+                <button
+                  type="submit"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white py-2.5 rounded font-bold text-sm transition shadow-sm cursor-pointer"
+                >
+                  Confirmar Clave
+                </button>
+              </form>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Admin Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-150 pb-4">
+                <div>
+                  <h2 className="text-lg font-bold text-ml-dark flex items-center gap-2">
+                    <Shield className="text-red-600" size={22} />
+                    <span>Panel de Control Administrativo</span>
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Gestioná publicaciones y usuarios registrados en la plataforma.
+                  </p>
+                </div>
+
+                {/* Sub-tabs toggles */}
+                <div className="flex gap-2 bg-gray-100 p-1 rounded-lg self-start sm:self-auto">
+                  <button
+                    onClick={() => {
+                      setAdminActiveSubTab("publicaciones");
+                      setAdminSearchQuery("");
+                    }}
+                    className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition ${
+                      adminActiveSubTab === "publicaciones"
+                        ? "bg-white text-ml-dark shadow-xs"
+                        : "text-gray-500 hover:text-ml-dark"
+                    }`}
+                  >
+                    <FolderHeart size={14} />
+                    <span>Publicaciones ({adminProducts.length})</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAdminActiveSubTab("usuarios");
+                      setAdminSearchQuery("");
+                    }}
+                    className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition ${
+                      adminActiveSubTab === "usuarios"
+                        ? "bg-white text-ml-dark shadow-xs"
+                        : "text-gray-500 hover:text-ml-dark"
+                    }`}
+                  >
+                    <Users size={14} />
+                    <span>Usuarios ({adminUsers.length})</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative max-w-md">
+                <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder={
+                    adminActiveSubTab === "publicaciones"
+                      ? "Buscar por título, vendedor, descripción..."
+                      : "Buscar por nombre, email, celular..."
+                  }
+                  value={adminSearchQuery}
+                  onChange={(e) => setAdminSearchQuery(e.target.value)}
+                  className="w-full border border-gray-300 rounded pl-10 pr-4 py-2 text-sm text-ml-dark focus:outline-none focus:border-ml-blue placeholder-gray-400"
+                />
+              </div>
+
+              {/* Loader */}
+              {loadingAdminData ? (
+                <div className="py-12 text-center flex flex-col items-center justify-center">
+                  <Loader2 className="animate-spin text-ml-blue mb-2.5" size={32} />
+                  <span className="text-sm text-gray-500">Procesando solicitud...</span>
+                </div>
+              ) : (
+                <>
+                  {/* SUBTAB 1: PRODUCTS LIST */}
+                  {adminActiveSubTab === "publicaciones" && (
+                    <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 font-bold uppercase tracking-wider">
+                            <th className="p-3.5">Producto</th>
+                            <th className="p-3.5">Vendedor</th>
+                            <th className="p-3.5">Barrio</th>
+                            <th className="p-3.5">Contactos / Vistas</th>
+                            <th className="p-3.5">Estado</th>
+                            <th className="p-3.5 text-right">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-150">
+                          {filteredAdminProducts.length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="p-8 text-center text-gray-400 italic">
+                                No se encontraron publicaciones.
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredAdminProducts.map((prod) => {
+                              const isDeact = !prod.isActive || (prod.contactCount >= (prod.maxContacts || 3));
+                              const dateStr = prod.createdAt ? new Date(prod.createdAt).toLocaleDateString() : "-";
+                              return (
+                                <tr key={prod.id} className="hover:bg-gray-50/50">
+                                  <td className="p-3.5">
+                                    <div className="flex items-center gap-3">
+                                      <img
+                                        src={prod.imageUrl}
+                                        alt=""
+                                        className="w-10 h-10 object-cover rounded border border-gray-150 bg-gray-50"
+                                      />
+                                      <div className="min-w-0">
+                                        <h4 className="font-bold text-ml-dark truncate max-w-[200px]" title={prod.title}>
+                                          {prod.title}
+                                        </h4>
+                                        <p className="text-[10px] text-gray-400 mt-0.5">ID: {prod.id} • {dateStr}</p>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="p-3.5">
+                                    <div className="font-medium text-ml-dark">{prod.sellerName}</div>
+                                    <div className="text-[10px] text-gray-400 mt-0.5">{prod.sellerPhone}</div>
+                                    {prod.sellerEmail && (
+                                      <div className="text-[10px] text-gray-400">{prod.sellerEmail}</div>
+                                    )}
+                                  </td>
+                                  <td className="p-3.5 text-gray-600 font-medium">
+                                    {prod.neighborhood === "Otro" ? prod.customNeighborhood : prod.neighborhood}
+                                  </td>
+                                  <td className="p-3.5">
+                                    <div className="text-ml-dark font-medium">
+                                      {prod.contactCount} / {prod.maxContacts || 3}
+                                    </div>
+                                    <div className="text-[10px] text-gray-400 mt-0.5">
+                                      {prod.viewsCount || 0} visitas
+                                    </div>
+                                  </td>
+                                  <td className="p-3.5">
+                                    {isDeact ? (
+                                      <span className="text-[9px] font-bold bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-150 uppercase">
+                                        Desactivado
+                                      </span>
+                                    ) : (
+                                      <span className="text-[9px] font-bold bg-green-50 text-ml-green px-1.5 py-0.5 rounded border border-green-150 uppercase">
+                                        Activo
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="p-3.5 text-right">
+                                    <div className="flex items-center gap-1.5 justify-end">
+                                      <a
+                                        href={`/producto/${prod.id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-1.5 border border-gray-200 hover:border-ml-blue hover:text-ml-blue bg-white rounded transition"
+                                        title="Ver publicación"
+                                      >
+                                        <Eye size={13} />
+                                      </a>
+                                      {isDeact ? (
+                                        <button
+                                          onClick={() => handleAdminReactivate(prod.id)}
+                                          className="p-1.5 border border-gray-200 hover:bg-green-50 hover:text-ml-green bg-white rounded transition"
+                                          title="Activar de nuevo"
+                                        >
+                                          <RefreshCw size={13} />
+                                        </button>
+                                      ) : (
+                                        <button
+                                          onClick={() => handleAdminDeactivate(prod.id)}
+                                          className="p-1.5 border border-amber-200 hover:bg-amber-50 text-amber-600 rounded transition"
+                                          title="Desactivar publicación"
+                                        >
+                                          <PowerOff size={13} />
+                                        </button>
+                                      )}
+                                      <button
+                                        onClick={() => handleAdminDeleteProduct(prod.id, prod.imageUrl)}
+                                        className="p-1.5 border border-red-200 hover:bg-red-50 text-red-600 rounded transition"
+                                        title="Eliminar permanentemente"
+                                      >
+                                        <Trash2 size={13} />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* SUBTAB 2: USERS LIST */}
+                  {adminActiveSubTab === "usuarios" && (
+                    <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 font-bold uppercase tracking-wider">
+                            <th className="p-3.5">Nombre / Apellido</th>
+                            <th className="p-3.5">Email</th>
+                            <th className="p-3.5">Celular</th>
+                            <th className="p-3.5">Fecha Registro</th>
+                            <th className="p-3.5 text-right">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-150">
+                          {filteredAdminUsers.length === 0 ? (
+                            <tr>
+                              <td colSpan={5} className="p-8 text-center text-gray-400 italic">
+                                No se encontraron usuarios.
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredAdminUsers.map((usr) => {
+                              const dateStr = usr.createdAt ? new Date(usr.createdAt).toLocaleDateString() : "-";
+                              return (
+                                <tr key={usr.uid} className="hover:bg-gray-50/50">
+                                  <td className="p-3.5 font-bold text-ml-dark">
+                                    {usr.name || usr.lastName ? `${usr.name} ${usr.lastName}`.trim() : "Sin completar"}
+                                  </td>
+                                  <td className="p-3.5 text-gray-600 font-medium">{usr.email}</td>
+                                  <td className="p-3.5 text-gray-600 font-mono">
+                                    {usr.phone ? usr.phone : "No registrado"}
+                                  </td>
+                                  <td className="p-3.5 text-gray-400">{dateStr}</td>
+                                  <td className="p-3.5 text-right">
+                                    <button
+                                      onClick={() => handleAdminDeleteUser(usr.uid, usr.email)}
+                                      disabled={usr.email === "israel.chueke@gmail.com"}
+                                      className="p-1.5 border border-red-200 hover:bg-red-50 text-red-600 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                      title={usr.email === "israel.chueke@gmail.com" ? "No se puede eliminar al administrador principal" : "Eliminar usuario"}
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
       </div>
