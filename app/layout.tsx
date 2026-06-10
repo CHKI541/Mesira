@@ -11,7 +11,27 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: "Mesira Argentina - Regalos gratis y sin spam",
-  description: "Publicá productos que ya no uses y encontrá regalos cerca tuyo. Rápido, transparente y protegido contra spam.",
+  description: "Publicá productos que ya no uses y encontrá regalos cerca tuyo en tu barrio de Buenos Aires. Rápido, gratuito, transparente y protegido contra spam.",
+  keywords: "regalos gratis, donaciones, productos gratis, Argentina, Buenos Aires, Flores, Once, Palermo, sin spam, comunidad",
+  authors: [{ name: "Mesira Argentina", url: "https://mesira.net" }],
+  metadataBase: new URL("https://mesira.net"),
+  openGraph: {
+    title: "Mesira Argentina - Regalos gratis y sin spam",
+    description: "Publicá productos que ya no uses y encontrá regalos cerca tuyo en tu barrio. Completamente gratis.",
+    url: "https://mesira.net",
+    siteName: "Mesira Argentina",
+    locale: "es_AR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Mesira Argentina - Regalos gratis",
+    description: "Publicá productos que ya no uses y encontrá regalos cerca tuyo. Completamente gratis.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

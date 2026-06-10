@@ -585,14 +585,23 @@ export const updateProductContact = async (id: string, userId: string): Promise<
   }
 };
 
-// 5b. Increment Product Views (Tracks unique visitors)
+// 5b. Increment Product Views (Tracks unique visitors, only increments count if new visitor)
 export const incrementProductViews = async (id: string, viewerId: string): Promise<void> => {
   if (isFirebaseConfigured) {
     try {
       const docRef = doc(db, "products", id);
-      await updateDoc(docRef, {
-        viewsCount: increment(1),
-        viewedUserIds: arrayUnion(viewerId)
+      // Bug #5 fix: Use a transaction to only increment viewsCount for genuinely new visitors
+      await runTransaction(db, async (transaction) => {
+        const snap = await transaction.get(docRef);
+        if (!snap.exists()) return;
+        const data = snap.data();
+        const viewedUserIds: string[] = data.viewedUserIds || [];
+        const alreadyViewed = viewedUserIds.includes(viewerId);
+        if (alreadyViewed) return; // Don't increment if already viewed
+        transaction.update(docRef, {
+          viewsCount: increment(1),
+          viewedUserIds: arrayUnion(viewerId)
+        });
       });
     } catch (e) {
       console.warn("Failed to increment views:", e);
@@ -622,6 +631,7 @@ export const reactivateProduct = async (id: string): Promise<Product> => {
     const updates = {
       createdAt: now,
       contactCount: 0,
+      contactedUserIds: [], // Bug #4 fix: reset contacted users so they can contact again
       isActive: true,
       deactivatedAt: null
     };
@@ -640,6 +650,7 @@ export const reactivateProduct = async (id: string): Promise<Product> => {
 
     products[index].createdAt = now.getTime();
     products[index].contactCount = 0;
+    products[index].contactedUserIds = []; // Bug #4 fix: reset contacted users
     products[index].isActive = true;
     delete products[index].deactivatedAt;
 

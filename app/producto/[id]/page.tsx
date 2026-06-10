@@ -52,8 +52,16 @@ export default function ProductDetailPage() {
           }
         }
 
-        // Increment views count in DB
-        await incrementProductViews(productId, visitorId || "anon");
+        // Bug #1 fix: Only increment views once per session to avoid inflating the counter on reload
+        const viewedKey = `viewed_${productId}`;
+        const alreadyViewed = typeof window !== "undefined" && sessionStorage.getItem(viewedKey) === "true";
+        if (!alreadyViewed) {
+          await incrementProductViews(productId, visitorId || "anon");
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem(viewedKey, "true");
+          }
+        }
+
         const data = await getProductById(productId);
         setProduct(data);
       } catch (err) {
@@ -64,7 +72,8 @@ export default function ProductDetailPage() {
       }
     }
     loadProduct();
-  }, [productId, user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productId]);
 
   // Check if user has already revealed contact info in this session
   useEffect(() => {
@@ -179,8 +188,9 @@ export default function ProductDetailPage() {
     );
   }
 
-  const isExpired = Date.now() - (typeof product.createdAt === "number" ? product.createdAt : new Date(product.createdAt).getTime()) > 48 * 60 * 60 * 1000;
-  const isDeactivated = !product.isActive || isExpired;
+  // Bug #2 fix: A product is only "expired" if it was deactivated and 48h have passed since deactivation.
+  // Active products stay visible for 60 days. We should NOT hide contact info just because product is >48h old.
+  const isDeactivated = !product.isActive;
   const neighborhoodLabel = product.neighborhood === "Otro" ? product.customNeighborhood : product.neighborhood;
 
   // Render variables for Argentine Phone Number formatting

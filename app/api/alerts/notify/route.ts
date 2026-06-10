@@ -92,6 +92,15 @@ const checkAlertMatchesProduct = (alert: any, product: any) => {
 
 export async function POST(request: Request) {
   try {
+    // Security fix #4: Require an internal secret header to prevent abuse from external callers
+    const internalSecret = process.env.ALERT_NOTIFY_SECRET;
+    if (internalSecret) {
+      const providedSecret = request.headers.get('x-internal-secret');
+      if (providedSecret !== internalSecret) {
+        return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
     const body = await request.json();
     const { productId, mockProduct, mockAlerts } = body;
 

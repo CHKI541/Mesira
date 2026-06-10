@@ -285,30 +285,33 @@ function MiCuentaContent() {
         categories: selectedCategories
       });
 
-      // 2b. Trigger alerts matching & email notifications
+      // 2b. Trigger alerts matching & email notifications (fire-and-forget with proper error handling)
       try {
-        if (isFirebaseActive) {
-          fetch("/api/alerts/notify", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ productId: createdProd.id }),
-          });
-        } else {
-          // Mock mode: Match locally and send alerts list directly to Server SMTP
-          const stored = localStorage.getItem("mesira_alerts_mock");
-          const mockAlertsList = stored ? JSON.parse(stored) : [];
-          fetch("/api/alerts/notify", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ mockProduct: createdProd, mockAlerts: mockAlertsList }),
-          });
+        const alertHeaders: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+        // Include internal secret if available (protects against unauthorized API calls)
+        if (process.env.NEXT_PUBLIC_ALERT_NOTIFY_SECRET) {
+          alertHeaders["x-internal-secret"] = process.env.NEXT_PUBLIC_ALERT_NOTIFY_SECRET;
         }
+        
+        const alertPayload = isFirebaseActive
+          ? { productId: createdProd.id }
+          : { mockProduct: createdProd, mockAlerts: (() => {
+              const stored = localStorage.getItem("mesira_alerts_mock");
+              return stored ? JSON.parse(stored) : [];
+            })() };
+        
+        // Non-blocking: don't await this so the publish experience is instant
+        fetch("/api/alerts/notify", {
+          method: "POST",
+          headers: alertHeaders,
+          body: JSON.stringify(alertPayload),
+        }).catch((alertErr) => {
+          console.warn("Error triggering alerts notification (non-blocking):", alertErr);
+        });
       } catch (alertErr) {
-        console.warn("Error triggering alerts check:", alertErr);
+        console.warn("Error setting up alerts check:", alertErr);
       }
 
       // 3. Clear form
