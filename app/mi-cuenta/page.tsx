@@ -13,7 +13,11 @@ import {
   deactivateProduct,
   deleteProduct, 
   uploadProductImage,
-  Product 
+  Product,
+  getAlerts,
+  createAlert,
+  deleteAlert,
+  Alert
 } from "@/lib/db";
 import { 
   PlusCircle, 
@@ -28,7 +32,8 @@ import {
   Clock, 
   Sparkles, 
   PowerOff,
-  User
+  User,
+  Bell
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -60,8 +65,8 @@ function MiCuentaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Tab state: 'perfil' | 'mis-publicaciones' | 'publicar'
-  const [activeTab, setActiveTab] = useState<'perfil' | 'mis-publicaciones' | 'publicar'>('perfil');
+  // Tab state: 'perfil' | 'mis-publicaciones' | 'publicar' | 'alertas'
+  const [activeTab, setActiveTab] = useState<'perfil' | 'mis-publicaciones' | 'publicar' | 'alertas'>('perfil');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Profile edit states
@@ -98,6 +103,16 @@ function MiCuentaContent() {
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Alert system states
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loadingAlerts, setLoadingAlerts] = useState(false);
+  const [alertKeyword, setAlertKeyword] = useState("");
+  const [alertCategories, setAlertCategories] = useState<string[]>([]);
+  const [alertConditions, setAlertConditions] = useState<string[]>([]);
+  const [alertNeighborhoods, setAlertNeighborhoods] = useState<string[]>([]);
+  const [savingAlert, setSavingAlert] = useState(false);
+  const [deletingAlertId, setDeletingAlertId] = useState<string | null>(null);
+
   // Registration/Verification details in page (fallback if they bypassed the modal)
   const [regName, setRegName] = useState("");
   const [regLastName, setRegLastName] = useState("");
@@ -109,7 +124,7 @@ function MiCuentaContent() {
   // Parse tabs from URL search parameters (?tab=publicar)
   useEffect(() => {
     const tabParam = searchParams.get("tab");
-    if (tabParam === "publicar" || tabParam === "mis-publicaciones" || tabParam === "perfil") {
+    if (tabParam === "publicar" || tabParam === "mis-publicaciones" || tabParam === "perfil" || tabParam === "alertas") {
       setActiveTab(tabParam as any);
     }
   }, [searchParams]);
@@ -131,6 +146,25 @@ function MiCuentaContent() {
       }
     }
     loadMyProducts();
+  }, [user, activeTab]);
+
+  // Load alerts when switching to 'alertas'
+  useEffect(() => {
+    async function loadMyAlerts() {
+      if (!user || !user.isPhoneVerified || activeTab !== "alertas") return;
+      setLoadingAlerts(true);
+      setDashboardError(null);
+      try {
+        const data = await getAlerts(user.uid);
+        setAlerts(data);
+      } catch (err) {
+        console.error("Error loading alerts:", err);
+        setDashboardError("No se pudieron cargar tus alertas.");
+      } finally {
+        setLoadingAlerts(false);
+      }
+    }
+    loadMyAlerts();
   }, [user, activeTab]);
 
   // Sync user values for registration or profile editing
@@ -235,7 +269,7 @@ function MiCuentaContent() {
       const imageUrl = await uploadProductImage(imageFile);
 
       // 2. Create product document
-      await createProduct({
+      const createdProd = await createProduct({
         title: title.trim(),
         description: description.trim(),
         imageUrl,
@@ -245,11 +279,37 @@ function MiCuentaContent() {
         sellerId: user.uid,
         sellerName: `${user.name} ${user.lastName}`.trim(),
         sellerPhone: `+549${pubPhone.trim()}`,
-        sellerEmail: user.email,
+        sellerEmail: user.email || "",
         maxContacts: maxContacts,
         contactPreferences: preferences,
         categories: selectedCategories
       });
+
+      // 2b. Trigger alerts matching & email notifications
+      try {
+        if (isFirebaseActive) {
+          fetch("/api/alerts/notify", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ productId: createdProd.id }),
+          });
+        } else {
+          // Mock mode: Match locally and send alerts list directly to Server SMTP
+          const stored = localStorage.getItem("mesira_alerts_mock");
+          const mockAlertsList = stored ? JSON.parse(stored) : [];
+          fetch("/api/alerts/notify", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ mockProduct: createdProd, mockAlerts: mockAlertsList }),
+          });
+        }
+      } catch (alertErr) {
+        console.warn("Error triggering alerts check:", alertErr);
+      }
 
       // 3. Clear form
       setTitle("");
@@ -325,6 +385,70 @@ function MiCuentaContent() {
       setMyProducts(prev => prev.filter(p => p.id !== id));
     } catch (err) {
       setDashboardError("No se pudo eliminar la publicación.");
+    }
+  };
+
+  // Create Alert handler
+  const handleCreateAlert = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDashboardError(null);
+    setSuccessMessage(null);
+
+    if (!user) return;
+
+    if (alerts.length >= 3) {
+      setDashboardError("Límite alcanzado: Podés tener un máximo de 3 alertas activas por cuenta.");
+      return;
+    }
+
+    // Validation: if everything is empty, suggest selecting at least one filter
+    const categories = alertCategories.length > 0 ? alertCategories : ["Todos"];
+    const conditions = alertConditions.length > 0 ? alertConditions : ["Todos"];
+    const neighborhoods = alertNeighborhoods.length > 0 ? alertNeighborhoods : ["Todos"];
+
+    setSavingAlert(true);
+    try {
+      const newAlert = await createAlert({
+        userId: user.uid,
+        userEmail: user.email || "",
+        keyword: alertKeyword.trim(),
+        categories,
+        conditions,
+        neighborhoods
+      });
+      setAlerts(prev => [newAlert, ...prev]);
+      
+      // Clear form
+      setAlertKeyword("");
+      setAlertCategories([]);
+      setAlertConditions([]);
+      setAlertNeighborhoods([]);
+
+      setSuccessMessage("¡Alerta creada con éxito! Te avisaremos por email cuando haya coincidencias.");
+      setTimeout(() => setSuccessMessage(null), 4000);
+    } catch (err) {
+      console.error("Error creating alert:", err);
+      setDashboardError("No se pudo crear la alerta.");
+    } finally {
+      setSavingAlert(false);
+    }
+  };
+
+  // Delete Alert handler
+  const handleDeleteAlert = async (id: string) => {
+    if (!confirm("¿Estás seguro de que querés eliminar esta alerta?")) return;
+    setDashboardError(null);
+    setDeletingAlertId(id);
+    try {
+      await deleteAlert(id);
+      setAlerts(prev => prev.filter(a => a.id !== id));
+      setSuccessMessage("Alerta eliminada con éxito.");
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      console.error("Error deleting alert:", err);
+      setDashboardError("No se pudo eliminar la alerta.");
+    } finally {
+      setDeletingAlertId(null);
     }
   };
 
@@ -510,6 +634,18 @@ function MiCuentaContent() {
         >
           <PlusCircle size={16} />
           <span>Publicar producto</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("alertas")}
+          className={`w-full flex items-center gap-2.5 px-4 py-3 text-xs font-bold rounded-lg transition-all focus:outline-none text-left ${
+            activeTab === "alertas" 
+              ? "bg-blue-50/50 text-[#0043C6]" 
+              : "text-gray-500 hover:text-ml-dark hover:bg-gray-50/50"
+          }`}
+        >
+          <Bell size={16} />
+          <span>Mis Alertas</span>
         </button>
       </div>
 
@@ -1033,6 +1169,292 @@ function MiCuentaContent() {
               <span>Guardar cambios</span>
             </button>
           </form>
+        </div>
+      )}
+
+      {/* TAB 4: ALERTS SYSTEM */}
+      {activeTab === "alertas" && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Create Alert Form Column */}
+          <div className="lg:col-span-7 bg-white border border-ml-border rounded-lg p-6 shadow-sm">
+            <h2 className="text-lg font-bold text-ml-dark mb-4 pb-2 border-b border-gray-150 flex items-center gap-2">
+              <Bell className="text-ml-blue" size={20} />
+              <span>Crear alerta en tiempo real</span>
+            </h2>
+            <p className="text-xs text-gray-500 mb-5 leading-relaxed">
+              Configurá una alerta para recibir un correo electrónico al instante cuando alguien publique un producto de tu interés.
+            </p>
+
+            <form onSubmit={handleCreateAlert} className="space-y-5">
+              {/* Keyword */}
+              <div>
+                <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">
+                  Palabra clave (opcional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej: cuna, cochecito, silla..."
+                  value={alertKeyword}
+                  onChange={(e) => setAlertKeyword(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-ml-dark focus:outline-none focus:border-ml-blue placeholder-gray-400"
+                />
+                <p className="text-[10px] text-gray-400 mt-1">Buscaremos esta palabra en el título y descripción de las publicaciones.</p>
+              </div>
+
+              {/* Categorías */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider">
+                    Categorías
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (alertCategories.length === AVAILABLE_CATEGORIES.length) {
+                        setAlertCategories([]);
+                      } else {
+                        setAlertCategories(AVAILABLE_CATEGORIES.map(c => c.value));
+                      }
+                    }}
+                    className="text-[10px] font-bold text-ml-blue hover:underline focus:outline-none cursor-pointer"
+                  >
+                    {alertCategories.length === AVAILABLE_CATEGORIES.length ? "Deseleccionar todas" : "Seleccionar todas"}
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-gray-50/50 border border-gray-150 rounded-xl p-3.5">
+                  {AVAILABLE_CATEGORIES.map((cat) => {
+                    const isChecked = alertCategories.includes(cat.value);
+                    return (
+                      <label 
+                        key={cat.value} 
+                        className={`flex items-center gap-2 p-2 rounded-lg border text-xs font-semibold cursor-pointer select-none transition ${
+                          isChecked 
+                            ? "bg-cyan-50/40 border-cyan-300 text-cyan-800" 
+                            : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked} 
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setAlertCategories(prev => [...prev, cat.value]);
+                            } else {
+                              setAlertCategories(prev => prev.filter(c => c !== cat.value));
+                            }
+                          }}
+                          className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500/20 w-4 h-4 cursor-pointer"
+                        />
+                        <span>{cat.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Estado / Condiciones */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider">
+                    Estado
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const values = ["perfecto", "buen", "funcional", "reparar"];
+                      if (alertConditions.length === values.length) {
+                        setAlertConditions([]);
+                      } else {
+                        setAlertConditions(values);
+                      }
+                    }}
+                    className="text-[10px] font-bold text-ml-blue hover:underline focus:outline-none cursor-pointer"
+                  >
+                    {alertConditions.length === 4 ? "Deseleccionar todos" : "Seleccionar todos"}
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2 bg-gray-50/50 border border-gray-150 rounded-xl p-3.5">
+                  {[
+                    { value: "perfecto", label: "Perfecto estado" },
+                    { value: "buen", label: "Buen estado" },
+                    { value: "funcional", label: "Estado funcional" },
+                    { value: "reparar", label: "Mal estado / A reparar" }
+                  ].map((cond) => {
+                    const isChecked = alertConditions.includes(cond.value);
+                    return (
+                      <label 
+                        key={cond.value} 
+                        className={`flex items-center gap-2 p-2 rounded-lg border text-xs font-semibold cursor-pointer select-none transition ${
+                          isChecked 
+                            ? "bg-cyan-50/40 border-cyan-300 text-cyan-800" 
+                            : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked} 
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setAlertConditions(prev => [...prev, cond.value]);
+                            } else {
+                              setAlertConditions(prev => prev.filter(c => c !== cond.value));
+                            }
+                          }}
+                          className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500/20 w-4 h-4 cursor-pointer"
+                        />
+                        <span>{cond.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Barrios */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider">
+                    Barrios de retiro
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const values = ["Flores", "Once", "Barracas", "Belgrano", "Palermo", "Villa Crespo", "Otro"];
+                      if (alertNeighborhoods.length === values.length) {
+                        setAlertNeighborhoods([]);
+                      } else {
+                        setAlertNeighborhoods(values);
+                      }
+                    }}
+                    className="text-[10px] font-bold text-ml-blue hover:underline focus:outline-none cursor-pointer"
+                  >
+                    {alertNeighborhoods.length === 7 ? "Deseleccionar todos" : "Seleccionar todos"}
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-gray-50/50 border border-gray-150 rounded-xl p-3.5">
+                  {["Flores", "Once", "Barracas", "Belgrano", "Palermo", "Villa Crespo", "Otro"].map((barrio) => {
+                    const isChecked = alertNeighborhoods.includes(barrio);
+                    return (
+                      <label 
+                        key={barrio} 
+                        className={`flex items-center gap-2 p-2 rounded-lg border text-xs font-semibold cursor-pointer select-none transition ${
+                          isChecked 
+                            ? "bg-cyan-50/40 border-cyan-300 text-cyan-800" 
+                            : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked} 
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setAlertNeighborhoods(prev => [...prev, barrio]);
+                            } else {
+                              setAlertNeighborhoods(prev => prev.filter(b => b !== barrio));
+                            }
+                          }}
+                          className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500/20 w-4 h-4 cursor-pointer"
+                        />
+                        <span>{barrio}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Submit button */}
+              <div className="pt-4 border-t border-gray-150 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={savingAlert}
+                  className="bg-ml-blue hover:bg-ml-blue-hover disabled:bg-gray-200 text-white font-bold py-3 px-6 rounded text-sm transition shadow-sm focus:outline-none flex items-center gap-2 cursor-pointer"
+                >
+                  {savingAlert && <Loader2 className="animate-spin" size={16} />}
+                  <span>Guardar Alerta</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Active Alerts List Column */}
+          <div className="lg:col-span-5 flex flex-col gap-4">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1">
+              Mis Alertas Activas ({alerts.length})
+            </h3>
+            
+            {loadingAlerts ? (
+              <div className="bg-white border border-ml-border rounded-lg p-12 text-center flex flex-col items-center justify-center">
+                <Loader2 className="animate-spin text-ml-blue mb-2.5" size={24} />
+                <span className="text-xs text-gray-500">Cargando alertas configuradas...</span>
+              </div>
+            ) : alerts.length === 0 ? (
+              <div className="bg-white border border-ml-border rounded-lg p-8 text-center">
+                <Bell className="mx-auto text-gray-300 mb-3" size={40} />
+                <p className="text-xs font-bold text-ml-dark">No tenés alertas configuradas.</p>
+                <p className="text-[11px] text-gray-400 mt-1">
+                  Creá tu primera alerta a la izquierda para enterarte primero cuando regalen lo que buscás.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {alerts.map((alert) => {
+                  const hasKeyword = alert.keyword && alert.keyword.trim() !== "";
+                  const catsLabel = alert.categories.includes("Todos") ? "Cualquier categoría" : alert.categories.map(c => {
+                    const catMap: Record<string, string> = {
+                      ropa: "Ropa", muebles: "Muebles", electronica: "Electrónica", bazar: "Bazar",
+                      herramientas: "Herramientas", farmacia: "Farmacia", "accesorios para vehiculos": "Vehículos",
+                      bebes: "Bebés", juguetes: "Juguetes", libros: "Libros", "kodesh y judaica": "Judaica", otro: "Otros"
+                    };
+                    return catMap[c] || c;
+                  }).join(", ");
+                  const condsLabel = alert.conditions.includes("Todos") ? "Cualquier estado" : alert.conditions.map(c => {
+                    const map: Record<string, string> = { perfecto: "Perfecto", buen: "Bueno", funcional: "Funcional", reparar: "Reparar" };
+                    return map[c] || c;
+                  }).join(", ");
+                  const barriosLabel = alert.neighborhoods.includes("Todos") ? "Cualquier barrio" : alert.neighborhoods.join(", ");
+
+                  return (
+                    <div 
+                      key={alert.id}
+                      className="bg-white border border-ml-border hover:border-gray-300 rounded-lg p-4 shadow-xs relative flex flex-col gap-2.5 transition animate-in fade-in-30"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-sm font-bold text-ml-dark leading-tight flex items-center gap-1.5 flex-wrap">
+                            <span className="text-ml-blue shrink-0">🔔</span>
+                            {hasKeyword ? (
+                              <span className="bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded border border-amber-200 text-xs font-bold font-mono">
+                                "{alert.keyword}"
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 text-xs italic">Cualquier palabra clave</span>
+                            )}
+                          </h4>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteAlert(alert.id)}
+                          disabled={deletingAlertId === alert.id}
+                          className="text-gray-400 hover:text-red-500 transition p-1 hover:bg-gray-50 rounded cursor-pointer"
+                          title="Eliminar alerta"
+                        >
+                          {deletingAlertId === alert.id ? (
+                            <Loader2 className="animate-spin" size={15} />
+                          ) : (
+                            <Trash2 size={15} />
+                          )}
+                        </button>
+                      </div>
+
+                      <div className="space-y-1.5 border-t border-gray-150 pt-2 text-[11px] text-gray-500">
+                        <p><strong className="text-gray-600 font-semibold">📁 Categorías:</strong> <span className="text-gray-500">{catsLabel}</span></p>
+                        <p><strong className="text-gray-600 font-semibold">📍 Barrios:</strong> <span className="text-gray-500">{barriosLabel}</span></p>
+                        <p><strong className="text-gray-600 font-semibold">🛡️ Estados:</strong> <span className="text-gray-500">{condsLabel}</span></p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       )}
       </div>

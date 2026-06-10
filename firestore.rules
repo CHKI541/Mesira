@@ -36,5 +36,11 @@ service cloud.firestore {
       // Allow delete only if the user is the seller
       allow delete: if request.auth != null && resource.data.sellerId == request.auth.uid;
     }
+
+    // Alert rules
+    match /alerts/{alertId} {
+      allow read, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
   }
 }

@@ -694,3 +694,103 @@ export const deleteProduct = async (id: string, imageUrl?: string): Promise<void
     saveMockProducts(filtered);
   }
 };
+
+// --- ALERT NOTIFICATIONS SYSTEM ---
+
+export interface Alert {
+  id: string;
+  userId: string;
+  userEmail: string;
+  keyword: string;
+  categories: string[];
+  conditions: string[];
+  neighborhoods: string[];
+  createdAt: any;
+  active: boolean;
+}
+
+const MOCK_STORAGE_KEY_ALERTS = "mesira_alerts_mock";
+
+const getMockAlerts = (): Alert[] => {
+  if (typeof window === "undefined") return [];
+  const stored = localStorage.getItem(MOCK_STORAGE_KEY_ALERTS);
+  return stored ? JSON.parse(stored) : [];
+};
+
+const saveMockAlerts = (alerts: Alert[]) => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(MOCK_STORAGE_KEY_ALERTS, JSON.stringify(alerts));
+  }
+};
+
+export const getAlerts = async (userId: string): Promise<Alert[]> => {
+  if (isFirebaseConfigured) {
+    const q = query(
+      collection(db, "alerts"),
+      where("userId", "==", userId)
+    );
+    const querySnapshot = await getDocs(q);
+    const results: Alert[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      results.push({
+        ...data,
+        id: doc.id,
+        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : data.createdAt
+      } as Alert);
+    });
+    // Sort in-memory to avoid requiring a composite Firestore index
+    return results.sort((a, b) => {
+      const timeA = parseDateToMillis(a.createdAt);
+      const timeB = parseDateToMillis(b.createdAt);
+      return timeB - timeA;
+    });
+  } else {
+    const alerts = getMockAlerts();
+    return alerts
+      .filter(a => a.userId === userId)
+      .sort((a, b) => {
+        const timeA = typeof a.createdAt === "number" ? a.createdAt : new Date(a.createdAt).getTime();
+        const timeB = typeof b.createdAt === "number" ? b.createdAt : new Date(b.createdAt).getTime();
+        return timeB - timeA;
+      });
+  }
+};
+
+export const createAlert = async (alertData: Omit<Alert, "id" | "createdAt" | "active">): Promise<Alert> => {
+  const createdAt = new Date();
+  const newAlert = {
+    ...alertData,
+    createdAt: isFirebaseConfigured ? createdAt : createdAt.getTime(),
+    active: true
+  };
+
+  if (isFirebaseConfigured) {
+    const docRef = await addDoc(collection(db, "alerts"), newAlert);
+    return {
+      ...newAlert,
+      id: docRef.id,
+      createdAt
+    } as Alert;
+  } else {
+    const alerts = getMockAlerts();
+    const alertWithId: Alert = {
+      ...newAlert,
+      id: `mock-alert-${Date.now()}`
+    } as Alert;
+    alerts.push(alertWithId);
+    saveMockAlerts(alerts);
+    return alertWithId;
+  }
+};
+
+export const deleteAlert = async (id: string): Promise<void> => {
+  if (isFirebaseConfigured) {
+    await deleteDoc(doc(db, "alerts", id));
+  } else {
+    const alerts = getMockAlerts();
+    const filtered = alerts.filter(a => a.id !== id);
+    saveMockAlerts(filtered);
+  }
+};
+
