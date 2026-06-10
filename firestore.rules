@@ -39,7 +39,7 @@ service cloud.firestore {
 
     // Alert rules
     match /alerts/{alertId} {
-      allow read, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow read, delete, update: if request.auth != null && resource.data.userId == request.auth.uid;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
     }
   }

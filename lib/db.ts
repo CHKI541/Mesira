@@ -12,7 +12,9 @@ import {
   orderBy, 
   limit,
   Timestamp,
-  increment
+  increment,
+  runTransaction,
+  arrayUnion
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage, isFirebaseConfigured } from "./firebase";
@@ -521,32 +523,34 @@ export const createProduct = async (productData: Omit<Product, "id" | "createdAt
 export const updateProductContact = async (id: string, userId: string): Promise<{ contactCount: number; isActive: boolean }> => {
   if (isFirebaseConfigured) {
     const docRef = doc(db, "products", id);
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) throw new Error("Product not found");
+    return await runTransaction(db, async (transaction) => {
+      const docSnap = await transaction.get(docRef);
+      if (!docSnap.exists()) throw new Error("Product not found");
 
-    const currentData = docSnap.data() as Product;
-    const contactedUserIds = currentData.contactedUserIds || [];
-    const maxLimit = currentData.maxContacts || 3;
+      const currentData = docSnap.data() as Product;
+      const contactedUserIds = currentData.contactedUserIds || [];
+      const maxLimit = currentData.maxContacts || 3;
 
-    if (contactedUserIds.includes(userId)) {
-      return { 
-        contactCount: currentData.contactCount || contactedUserIds.length, 
-        isActive: currentData.isActive 
-      };
-    }
+      if (contactedUserIds.includes(userId)) {
+        return { 
+          contactCount: currentData.contactCount || contactedUserIds.length, 
+          isActive: currentData.isActive 
+        };
+      }
 
-    const updatedUserIds = [...contactedUserIds, userId];
-    const newCount = (currentData.contactCount || 0) + 1;
-    const isActive = newCount < maxLimit;
+      const updatedUserIds = [...contactedUserIds, userId];
+      const newCount = (currentData.contactCount || 0) + 1;
+      const isActive = newCount < maxLimit;
 
-    await updateDoc(docRef, {
-      contactCount: newCount,
-      contactedUserIds: updatedUserIds,
-      isActive: isActive,
-      ...(!isActive ? { deactivatedAt: new Date() } : {})
+      transaction.update(docRef, {
+        contactCount: newCount,
+        contactedUserIds: updatedUserIds,
+        isActive: isActive,
+        ...(!isActive ? { deactivatedAt: Timestamp.fromDate(new Date()) } : {})
+      });
+
+      return { contactCount: newCount, isActive };
     });
-
-    return { contactCount: newCount, isActive };
   } else {
     const products = getMockProducts();
     const index = products.findIndex(p => p.id === id);
@@ -586,19 +590,10 @@ export const incrementProductViews = async (id: string, viewerId: string): Promi
   if (isFirebaseConfigured) {
     try {
       const docRef = doc(db, "products", id);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data() as Product;
-        const viewedUserIds = data.viewedUserIds || [];
-        const updatedUserIds = viewedUserIds.includes(viewerId)
-          ? viewedUserIds
-          : [...viewedUserIds, viewerId];
-        
-        await updateDoc(docRef, {
-          viewsCount: increment(1),
-          viewedUserIds: updatedUserIds
-        });
-      }
+      await updateDoc(docRef, {
+        viewsCount: increment(1),
+        viewedUserIds: arrayUnion(viewerId)
+      });
     } catch (e) {
       console.warn("Failed to increment views:", e);
     }

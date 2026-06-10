@@ -183,10 +183,26 @@ export async function POST(request: Request) {
         </div>
       `;
 
+      const textContent = `
+¡Alerta de Mesira Argentina!
+
+Se ha publicado un nuevo producto que coincide con tu alerta configurada:
+
+${productToNotify.title}
+Estado: ${conditionLabel}
+Barrio: ${neighborhoodLabel}
+Descripción: ${productToNotify.description}
+
+Ver Publicación: ${productUrl}
+
+Recibiste este correo porque tenés activa una alerta en Mesira Argentina. Podés darla de baja desde tu cuenta.
+      `;
       return transporter.sendMail({
-        from: `"Mesira Argentina" <${process.env.SMTP_USER}>`,
+        from: `"Mesira Argentina" <${process.env.SMTP_FROM || 'alertas@mesira.net'}>`,
+        replyTo: process.env.SMTP_FROM || 'alertas@mesira.net',
         to: email,
-        subject: `¡Nueva publicación coincide con tu alerta!: ${productToNotify.title}`,
+        subject: `Nueva publicación coincide con tu alerta: ${productToNotify.title}`,
+        text: textContent,
         html: htmlContent,
       });
     });
