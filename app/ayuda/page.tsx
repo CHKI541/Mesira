@@ -96,6 +96,7 @@ export default function AyudaPage() {
                 Las publicaciones activas duran hasta 60 días para dar tiempo a que encuentren interesados. Pero si la publicación se desactiva (consigue 3 contactos), desaparecerá definitivamente tras 48 horas.
               </p>
             </div>
+          </div>
         </div>
 
         {/* Contact and Support Section */}
