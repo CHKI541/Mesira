@@ -30,6 +30,7 @@ export default function ProductDetailPage() {
   const { user, isOnboardingCompleted, setIsOnboardingCompleted } = useAuth();
   
   const [product, setProduct] = useState<Product | null>(null);
+  const [activeImage, setActiveImage] = useState<string>("");
   const [loadingProduct, setLoadingProduct] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [hasContacted, setHasContacted] = useState(false);
@@ -64,6 +65,9 @@ export default function ProductDetailPage() {
 
         const data = await getProductById(productId);
         setProduct(data);
+        if (data) {
+          setActiveImage(data.imageUrl);
+        }
       } catch (err) {
         console.error("Error loading product:", err);
         setError("No se pudo cargar el producto.");
@@ -225,12 +229,36 @@ export default function ProductDetailPage() {
         <div className="bg-white rounded-lg border border-ml-border shadow-sm overflow-hidden grid grid-cols-1 md:grid-cols-12 gap-0">
           
           {/* Left Column: Image (span 7) */}
-          <div className="md:col-span-7 bg-gray-50 flex items-center justify-center p-4 border-b md:border-b-0 md:border-r border-gray-150 relative min-h-[320px] md:min-h-[480px]">
-            <img 
-              src={product.imageUrl} 
-              alt={product.title} 
-              className="max-h-[440px] max-w-full object-contain rounded"
-            />
+          <div className="md:col-span-7 bg-gray-50 flex flex-col items-center justify-center p-4 border-b md:border-b-0 md:border-r border-gray-150 relative min-h-[320px] md:min-h-[480px]">
+            {/* Main Image */}
+            <div className="flex-1 flex items-center justify-center w-full min-h-[260px] md:min-h-[380px]">
+              <img 
+                src={activeImage || product.imageUrl} 
+                alt={product.title} 
+                className="max-h-[360px] md:max-h-[420px] max-w-full object-contain rounded transition-all duration-300"
+              />
+            </div>
+            
+            {/* Thumbnails Row */}
+            {product.imageUrls && product.imageUrls.length > 1 && (
+              <div className="w-full flex justify-center gap-2 mt-4 px-2 overflow-x-auto py-1">
+                {product.imageUrls.map((url, index) => {
+                  const isActive = url === activeImage;
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => setActiveImage(url)}
+                      className={`relative w-14 h-14 md:w-16 md:h-16 rounded-lg overflow-hidden border-2 transition focus:outline-none shrink-0 ${
+                        isActive ? "border-ml-blue ring-2 ring-ml-blue/10 scale-105" : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <img src={url} alt={`thumb-${index}`} className="w-full h-full object-cover" />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {isDeactivated && (
               <div className="absolute inset-0 bg-white/75 backdrop-blur-[1px] flex flex-col items-center justify-center p-4">
                 <div className="bg-red-50 border border-red-200 rounded-lg p-5 max-w-sm text-center shadow-md">

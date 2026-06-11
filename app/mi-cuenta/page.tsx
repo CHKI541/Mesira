@@ -107,8 +107,13 @@ function MiCuentaContent() {
   const [editNeighborhood, setEditNeighborhood] = useState("Flores");
   const [editCustomNeighborhood, setEditCustomNeighborhood] = useState("");
   const [editCategories, setEditCategories] = useState<string[]>([]);
-  const [editImageFile, setEditImageFile] = useState<File | null>(null);
-  const [editImageSrc, setEditImageSrc] = useState<string | null>(null);
+  interface EditImageItem {
+    id: string;
+    src: string;
+    file?: File;
+  }
+  const [editImages, setEditImages] = useState<EditImageItem[]>([]);
+  const [editCoverId, setEditCoverId] = useState<string>("");
   const [editMaxContacts, setEditMaxContacts] = useState<number>(3);
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -132,8 +137,9 @@ function MiCuentaContent() {
   const [condition, setCondition] = useState<Product["condition"]>("buen");
   const [neighborhood, setNeighborhood] = useState("Flores");
   const [customNeighborhood, setCustomNeighborhood] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imageSrcs, setImageSrcs] = useState<string[]>([]);
+  const [coverImageIndex, setCoverImageIndex] = useState<number>(0);
   const [maxContacts, setMaxContacts] = useState(3);
   const [prefWhatsApp, setPrefWhatsApp] = useState(true);
   const [prefLlamadas, setPrefLlamadas] = useState(true);
@@ -281,17 +287,29 @@ function MiCuentaContent() {
     }
   };
 
-  // Trigger preview image reader
+  // Trigger preview image reader (multiple files)
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    
+    // Max 5 images limit check
+    const totalCount = imageFiles.length + files.length;
+    if (totalCount > 5) {
+      setDashboardError("Podés subir hasta 5 fotos como máximo.");
+      return;
+    }
+
+    const newFiles = [...imageFiles, ...files];
+    setImageFiles(newFiles);
+
+    // Read previews
+    files.forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImageSrc(reader.result as string);
+        setImageSrcs((prev) => [...prev, reader.result as string]);
       };
       reader.readAsDataURL(file);
-    }
+    });
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -320,7 +338,7 @@ function MiCuentaContent() {
       return setDashboardError("Por favor, seleccioná al menos una categoría para tu producto.");
     }
     
-    if (!imageFile) return setDashboardError("Por favor, subí una foto de tu producto.");
+    if (imageFiles.length === 0) return setDashboardError("Por favor, subí al menos una foto de tu producto.");
     if (neighborhood === "Otro" && !customNeighborhood.trim()) {
       return setDashboardError("Por favor, ingresá el nombre del barrio.");
     }
@@ -330,14 +348,18 @@ function MiCuentaContent() {
 
     setFormLoading(true);
     try {
-      // 1. Upload image
-      const imageUrl = await uploadProductImage(imageFile);
+      // 1. Upload images in parallel
+      const imageUrls = await Promise.all(
+        imageFiles.map((file) => uploadProductImage(file))
+      );
+      const imageUrl = imageUrls[coverImageIndex] || imageUrls[0];
 
       // 2. Create product document
       const createdProd = await createProduct({
         title: title.trim(),
         description: description.trim(),
         imageUrl,
+        imageUrls,
         condition,
         neighborhood,
         customNeighborhood: neighborhood === "Otro" ? customNeighborhood.trim() : "",
@@ -385,8 +407,9 @@ function MiCuentaContent() {
       setCondition("buen");
       setNeighborhood("Flores");
       setCustomNeighborhood("");
-      setImageFile(null);
-      setImageSrc(null);
+      setImageFiles([]);
+      setImageSrcs([]);
+      setCoverImageIndex(0);
       setMaxContacts(3);
       setPrefWhatsApp(true);
       setPrefLlamadas(true);
@@ -531,27 +554,56 @@ function MiCuentaContent() {
     setEditCustomNeighborhood(prod.customNeighborhood || "");
     setEditCategories(prod.categories || []);
     setEditMaxContacts(prod.maxContacts || 3);
-    setEditImageFile(null);
-    setEditImageSrc(null);
+    
+    // Load existing images
+    const existingUrls = prod.imageUrls && prod.imageUrls.length > 0
+      ? prod.imageUrls
+      : [prod.imageUrl];
+    const items = existingUrls.map((url, index) => ({
+      id: `existing-${index}-${Date.now()}`,
+      src: url
+    }));
+    setEditImages(items);
+    
+    // Find cover image ID
+    const coverItem = items.find(item => item.src === prod.imageUrl) || items[0];
+    setEditCoverId(coverItem ? coverItem.id : "");
+    
     setEditError(null);
     if (editFileInputRef.current) editFileInputRef.current.value = "";
   };
 
   const closeEditModal = () => {
     setEditingProduct(null);
-    setEditImageFile(null);
-    setEditImageSrc(null);
+    setEditImages([]);
+    setEditCoverId("");
     setEditError(null);
   };
 
   const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setEditImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setEditImageSrc(reader.result as string);
-      reader.readAsDataURL(file);
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    
+    const totalCount = editImages.length + files.length;
+    if (totalCount > 5) {
+      setEditError("Podés tener hasta 5 fotos en total.");
+      return;
     }
+
+    files.forEach((file, idx) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditImages((prev) => [
+          ...prev,
+          {
+            id: `new-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+            src: reader.result as string,
+            file: file,
+          },
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleEditSave = async (e: React.FormEvent) => {
@@ -561,13 +613,27 @@ function MiCuentaContent() {
     if (!editTitle.trim()) return setEditError("El título no puede estar vacío.");
     if (!editDescription.trim()) return setEditError("La descripción no puede estar vacía.");
     if (editNeighborhood === "Otro" && !editCustomNeighborhood.trim()) return setEditError("Especificá el barrio.");
+    if (editImages.length === 0) return setEditError("Tenés que incluir al menos una foto.");
+
+    // Validate that the cover image exists in the current list
+    const hasCover = editImages.some((img) => img.id === editCoverId);
+    const coverIdToUse = hasCover ? editCoverId : editImages[0].id;
 
     setEditLoading(true);
     try {
-      let newImageUrl: string | undefined = undefined;
-      if (editImageFile) {
-        newImageUrl = await uploadProductImage(editImageFile);
-      }
+      // 1. Upload all new images in parallel and keep existing ones
+      const finalImageUrls = await Promise.all(
+        editImages.map(async (img) => {
+          if (img.file) {
+            return await uploadProductImage(img.file);
+          }
+          return img.src; // existing URL
+        })
+      );
+
+      // 2. Identify the selected cover URL
+      const coverIndex = editImages.findIndex((img) => img.id === coverIdToUse);
+      const imageUrl = finalImageUrls[coverIndex] || finalImageUrls[0];
 
       const editData: ProductEditData = {
         title: editTitle.trim(),
@@ -577,20 +643,21 @@ function MiCuentaContent() {
         customNeighborhood: editNeighborhood === "Otro" ? editCustomNeighborhood.trim() : "",
         categories: editCategories,
         maxContacts: editMaxContacts,
-        ...(newImageUrl ? { imageUrl: newImageUrl } : {}),
+        imageUrl,
+        imageUrls: finalImageUrls,
       };
 
       if (editIsAdmin) {
         // Admin editing any product
         await editProductAdmin(editingProduct.id, editData, getIdToken);
         setAdminProducts(prev => prev.map(p => p.id === editingProduct.id
-          ? { ...p, ...editData, imageUrl: newImageUrl || p.imageUrl }
+          ? { ...p, ...editData }
           : p
         ));
       } else {
         // User editing their own product
         const updated = await updateProductContent(editingProduct.id, user.uid, editData);
-        setMyProducts(prev => prev.map(p => p.id === editingProduct.id ? { ...p, ...editData, imageUrl: newImageUrl || p.imageUrl } : p));
+        setMyProducts(prev => prev.map(p => p.id === editingProduct.id ? { ...p, ...editData } : p));
       }
 
       setSuccessMessage("¡Publicación actualizada con éxito!");
@@ -1178,37 +1245,81 @@ function MiCuentaContent() {
               {/* Image Picker */}
               <div>
                 <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">
-                  Foto del producto
+                  Fotos del producto (Subí hasta 5 fotos. Hacé click en una para elegirla como Portada)
                 </label>
                 <div 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-gray-300 hover:border-ml-blue rounded-lg p-5 text-center cursor-pointer transition bg-gray-50 hover:bg-emerald-50/20 flex flex-col items-center justify-center gap-1.5"
+                  onClick={() => {
+                    if (imageFiles.length < 5) {
+                      fileInputRef.current?.click();
+                    } else {
+                      setDashboardError("Ya subiste el límite de 5 fotos.");
+                    }
+                  }}
+                  className={`border-2 border-dashed border-gray-300 hover:border-ml-blue rounded-lg p-5 text-center cursor-pointer transition bg-gray-50 hover:bg-emerald-50/20 flex flex-col items-center justify-center gap-1.5 ${
+                    imageFiles.length >= 5 ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   <ImageIcon className="text-gray-400" size={32} />
-                  <span className="text-xs font-bold text-ml-dark">Hacé click para subir una imagen</span>
-                  <span className="text-[10px] text-gray-400">Archivos permitidos: JPG, PNG, WEBP</span>
+                  <span className="text-xs font-bold text-ml-dark">Hacé click para subir imágenes</span>
+                  <span className="text-[10px] text-gray-400">Podés seleccionar varias. Permitidos: JPG, PNG, WEBP</span>
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={handleImageChange}
                     className="hidden"
                   />
                 </div>
-                {imageFile && (
-                  <div className="mt-2.5 bg-emerald-50/50 border border-emerald-100 rounded px-3 py-1.5 flex items-center justify-between text-xs text-ml-dark">
-                    <span className="truncate font-semibold">{imageFile.name}</span>
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        setImageFile(null);
-                        setImageSrc(null);
-                        if (fileInputRef.current) fileInputRef.current.value = "";
-                      }}
-                      className="text-red-500 font-bold hover:underline"
-                    >
-                      Quitar
-                    </button>
+
+                {imageSrcs.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <span className="text-[11px] text-gray-400 font-semibold block">
+                      Hacé click en la foto que querés que sea la de portada (estará marcada con ★ Portada):
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-gray-50 border border-gray-150 rounded-xl p-3">
+                      {imageSrcs.map((src, index) => {
+                        const isCover = index === coverImageIndex;
+                        return (
+                          <div 
+                            key={index}
+                            onClick={() => setCoverImageIndex(index)}
+                            className={`relative rounded-lg overflow-hidden aspect-square border-2 cursor-pointer transition select-none ${
+                              isCover ? "border-ml-blue ring-2 ring-ml-blue/10" : "border-gray-200 hover:border-gray-300"
+                            }`}
+                          >
+                            <img src={src} alt={`preview-${index}`} className="w-full h-full object-cover" />
+                            {isCover ? (
+                              <div className="absolute bottom-0 left-0 right-0 bg-ml-blue text-white text-[9px] font-bold py-0.5 text-center flex items-center justify-center gap-0.5">
+                                <span>★ Portada</span>
+                              </div>
+                            ) : (
+                              <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition flex items-center justify-center">
+                                <span className="text-[9px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded opacity-0 hover:opacity-100 transition">Usar portada</span>
+                              </div>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setImageFiles((prev) => prev.filter((_, i) => i !== index));
+                                setImageSrcs((prev) => prev.filter((_, i) => i !== index));
+                                // adjust cover index
+                                if (coverImageIndex === index) {
+                                  setCoverImageIndex(0);
+                                } else if (coverImageIndex > index) {
+                                  setCoverImageIndex((prev) => prev - 1);
+                                }
+                              }}
+                              className="absolute top-1 right-1 bg-red-600/80 hover:bg-red-600 text-white rounded-full p-1 shadow-sm transition hover:scale-105"
+                              title="Quitar imagen"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1237,7 +1348,7 @@ function MiCuentaContent() {
               condition={condition}
               neighborhood={neighborhood}
               customNeighborhood={customNeighborhood}
-              imageSrc={imageSrc}
+              imageSrc={imageSrcs[coverImageIndex] || null}
             />
           </div>
         </div>
@@ -2184,26 +2295,66 @@ function MiCuentaContent() {
               </p>
             </div>
 
-            {/* Image Change (optional) */}
+            {/* Fotos del producto (editar) */}
             <div>
-              <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">Foto (opcional - solo si querés cambiarla)</label>
-              <div className="flex items-center gap-4">
-                <img
-                  src={editImageSrc || editingProduct.imageUrl}
-                  alt="preview"
-                  className="w-16 h-16 object-cover rounded border border-gray-200 bg-gray-50 shrink-0"
-                />
-                <div className="flex-1">
+              <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">
+                Fotos del producto (Subí hasta 5 fotos en total. Hacé click en una para elegirla como Portada)
+              </label>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-gray-50 border border-gray-150 rounded-xl p-3 mb-3">
+                {editImages.map((img, index) => {
+                  const isCover = img.id === editCoverId;
+                  return (
+                    <div 
+                      key={img.id}
+                      onClick={() => setEditCoverId(img.id)}
+                      className={`relative rounded-lg overflow-hidden aspect-square border-2 cursor-pointer transition select-none ${
+                        isCover ? "border-ml-blue ring-2 ring-ml-blue/10" : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <img src={img.src} alt={`edit-preview-${index}`} className="w-full h-full object-cover" />
+                      {isCover ? (
+                        <div className="absolute bottom-0 left-0 right-0 bg-ml-blue text-white text-[9px] font-bold py-0.5 text-center flex items-center justify-center gap-0.5">
+                          <span>★ Portada</span>
+                        </div>
+                      ) : (
+                        <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition flex items-center justify-center">
+                          <span className="text-[9px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded opacity-0 hover:opacity-100 transition">Usar portada</span>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditImages((prev) => prev.filter((item) => item.id !== img.id));
+                          if (editCoverId === img.id) {
+                            const remaining = editImages.filter((item) => item.id !== img.id);
+                            if (remaining.length > 0) setEditCoverId(remaining[0].id);
+                          }
+                        }}
+                        className="absolute top-1 right-1 bg-red-600/80 hover:bg-red-600 text-white rounded-full p-1 shadow-sm transition hover:scale-105"
+                        title="Quitar foto"
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {editImages.length < 5 && (
+                <div>
                   <input
                     ref={editFileInputRef}
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={handleEditImageChange}
                     className="w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 cursor-pointer"
                   />
-                  <p className="text-[10px] text-gray-400 mt-1">Dejá vacío para mantener la foto actual.</p>
+                  <p className="text-[10px] text-gray-400 mt-1">Podés seleccionar una o varias fotos adicionales para agregar.</p>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Submit buttons */}

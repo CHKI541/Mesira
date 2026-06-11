@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     await verifyAdmin(request);
-    const { id, title, description, condition, neighborhood, customNeighborhood, categories, imageUrl, maxContacts } = await request.json();
+    const { id, title, description, condition, neighborhood, customNeighborhood, categories, imageUrl, imageUrls, maxContacts } = await request.json();
 
     if (!id) {
       return NextResponse.json({ error: "ID de producto requerido." }, { status: 400 });
@@ -68,6 +68,7 @@ export async function PUT(request: Request) {
     if (customNeighborhood !== undefined) updates.customNeighborhood = customNeighborhood;
     if (categories !== undefined) updates.categories = categories;
     if (imageUrl !== undefined) updates.imageUrl = imageUrl;
+    if (imageUrls !== undefined) updates.imageUrls = imageUrls;
     if (maxContacts !== undefined) updates.maxContacts = maxContacts;
 
     await adminDb.collection("products").doc(id).update(updates);

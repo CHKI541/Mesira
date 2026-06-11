@@ -25,6 +25,7 @@ export interface Product {
   title: string;
   description: string;
   imageUrl: string;
+  imageUrls?: string[];
   condition: "perfecto" | "buen" | "funcional" | "reparar";
   neighborhood: string;
   customNeighborhood?: string;
@@ -528,6 +529,7 @@ export interface ProductEditData {
   customNeighborhood: string;
   categories: string[];
   imageUrl?: string; // optional: if new image was uploaded
+  imageUrls?: string[]; // optional: list of all images
   maxContacts?: number; // optional: limit of contacts
 }
 
@@ -553,6 +555,7 @@ export const updateProductContent = async (
       maxContacts: editData.maxContacts !== undefined ? editData.maxContacts : 3,
     };
     if (editData.imageUrl) updates.imageUrl = editData.imageUrl;
+    if (editData.imageUrls) updates.imageUrls = editData.imageUrls;
 
     await updateDoc(docRef, updates as any);
     const updated = await getDoc(docRef);
