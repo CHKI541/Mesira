@@ -50,6 +50,35 @@ export async function POST(request: Request) {
   }
 }
 
+// PUT: Edit product content (admin can edit any product)
+export async function PUT(request: Request) {
+  try {
+    await verifyAdmin(request);
+    const { id, title, description, condition, neighborhood, customNeighborhood, categories, imageUrl } = await request.json();
+
+    if (!id) {
+      return NextResponse.json({ error: "ID de producto requerido." }, { status: 400 });
+    }
+
+    const updates: Record<string, any> = {};
+    if (title !== undefined) updates.title = title;
+    if (description !== undefined) updates.description = description;
+    if (condition !== undefined) updates.condition = condition;
+    if (neighborhood !== undefined) updates.neighborhood = neighborhood;
+    if (customNeighborhood !== undefined) updates.customNeighborhood = customNeighborhood;
+    if (categories !== undefined) updates.categories = categories;
+    if (imageUrl !== undefined) updates.imageUrl = imageUrl;
+
+    await adminDb.collection("products").doc(id).update(updates);
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("Admin product edit error:", error);
+    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+  }
+}
+
+
 // DELETE: Delete product
 export async function DELETE(request: Request) {
   try {

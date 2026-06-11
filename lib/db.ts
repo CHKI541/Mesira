@@ -519,6 +519,57 @@ export const createProduct = async (productData: Omit<Product, "id" | "createdAt
   }
 };
 
+// 4b. Update Product Content (owner only - editable fields)
+export interface ProductEditData {
+  title: string;
+  description: string;
+  condition: Product["condition"];
+  neighborhood: string;
+  customNeighborhood: string;
+  categories: string[];
+  imageUrl?: string; // optional: if new image was uploaded
+}
+
+export const updateProductContent = async (
+  id: string,
+  sellerId: string,
+  editData: ProductEditData
+): Promise<Product> => {
+  if (isFirebaseConfigured) {
+    const docRef = doc(db, "products", id);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) throw new Error("Publicación no encontrada.");
+    const data = docSnap.data() as Product;
+    if (data.sellerId !== sellerId) throw new Error("No tenés permiso para editar esta publicación.");
+
+    const updates: Partial<Product> = {
+      title: editData.title,
+      description: editData.description,
+      condition: editData.condition,
+      neighborhood: editData.neighborhood,
+      customNeighborhood: editData.customNeighborhood,
+      categories: editData.categories,
+    };
+    if (editData.imageUrl) updates.imageUrl = editData.imageUrl;
+
+    await updateDoc(docRef, updates as any);
+    const updated = await getDoc(docRef);
+    return { ...updated.data(), id, createdAt: data.createdAt } as Product;
+  } else {
+    const products = getMockProducts();
+    const index = products.findIndex(p => p.id === id);
+    if (index === -1) throw new Error("Publicación no encontrada.");
+    if (products[index].sellerId !== sellerId) throw new Error("No tenés permiso para editar esta publicación.");
+    products[index] = {
+      ...products[index],
+      ...editData,
+    };
+    saveMockProducts(products);
+    return products[index];
+  }
+};
+
+
 // 5. Contact Deactivation Logic (Configurable Max Contacts, Unique Users)
 export const updateProductContact = async (id: string, userId: string): Promise<{ contactCount: number; isActive: boolean }> => {
   if (isFirebaseConfigured) {
@@ -988,6 +1039,42 @@ export const deleteProductAdmin = async (
     await deleteProduct(id, imageUrl);
   }
 };
+
+export const editProductAdmin = async (
+  id: string,
+  editData: ProductEditData,
+  getIdTokenFn: () => Promise<string>
+): Promise<void> => {
+  if (isFirebaseConfigured) {
+    const token = await getIdTokenFn();
+    const res = await fetch("/api/admin/products", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ id, ...editData })
+    });
+    if (!res.ok) {
+      const ct = res.headers.get("content-type") || "";
+      if (ct.includes("application/json")) {
+        const errData = await res.json();
+        throw new Error(errData.error || `Error ${res.status} al editar el producto`);
+      } else {
+        throw new Error(`Error del servidor (${res.status}) al editar el producto.`);
+      }
+    }
+  } else {
+    // Mock mode: update local storage directly
+    const products = getMockProducts();
+    const index = products.findIndex(p => p.id === id);
+    if (index !== -1) {
+      products[index] = { ...products[index], ...editData };
+      saveMockProducts(products);
+    }
+  }
+};
+
 
 
 

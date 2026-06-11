@@ -23,7 +23,10 @@ import {
   UserProfile,
   deactivateProductAdmin,
   reactivateProductAdmin,
-  deleteProductAdmin
+  deleteProductAdmin,
+  updateProductContent,
+  editProductAdmin,
+  ProductEditData
 } from "@/lib/db";
 import { 
   PlusCircle, 
@@ -44,7 +47,9 @@ import {
   Users,
   Lock,
   Shield,
-  Search
+  Search,
+  Pencil,
+  X
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -92,6 +97,21 @@ function MiCuentaContent() {
   const [loadingAdminData, setLoadingAdminData] = useState(false);
   const [adminSearchQuery, setAdminSearchQuery] = useState("");
   const [adminActiveSubTab, setAdminActiveSubTab] = useState<'publicaciones' | 'usuarios'>('publicaciones');
+
+  // Edit modal state (shared for user-own and admin editing)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editIsAdmin, setEditIsAdmin] = useState(false); // true = admin editing someone else's product
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editCondition, setEditCondition] = useState<Product["condition"]>("buen");
+  const [editNeighborhood, setEditNeighborhood] = useState("Flores");
+  const [editCustomNeighborhood, setEditCustomNeighborhood] = useState("");
+  const [editCategories, setEditCategories] = useState<string[]>([]);
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editImageSrc, setEditImageSrc] = useState<string | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   // Profile edit states
   const [profileName, setProfileName] = useState("");
@@ -499,6 +519,88 @@ function MiCuentaContent() {
     }
   };
 
+  // Open edit modal for a product (owner or admin)
+  const openEditModal = (prod: Product, isAdmin: boolean) => {
+    setEditingProduct(prod);
+    setEditIsAdmin(isAdmin);
+    setEditTitle(prod.title);
+    setEditDescription(prod.description);
+    setEditCondition(prod.condition);
+    setEditNeighborhood(prod.neighborhood);
+    setEditCustomNeighborhood(prod.customNeighborhood || "");
+    setEditCategories(prod.categories || []);
+    setEditImageFile(null);
+    setEditImageSrc(null);
+    setEditError(null);
+    if (editFileInputRef.current) editFileInputRef.current.value = "";
+  };
+
+  const closeEditModal = () => {
+    setEditingProduct(null);
+    setEditImageFile(null);
+    setEditImageSrc(null);
+    setEditError(null);
+  };
+
+  const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setEditImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setEditImageSrc(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleEditSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct || !user) return;
+    setEditError(null);
+    if (!editTitle.trim()) return setEditError("El título no puede estar vacío.");
+    if (!editDescription.trim()) return setEditError("La descripción no puede estar vacía.");
+    if (editNeighborhood === "Otro" && !editCustomNeighborhood.trim()) return setEditError("Especificá el barrio.");
+
+    setEditLoading(true);
+    try {
+      let newImageUrl: string | undefined = undefined;
+      if (editImageFile) {
+        newImageUrl = await uploadProductImage(editImageFile);
+      }
+
+      const editData: ProductEditData = {
+        title: editTitle.trim(),
+        description: editDescription.trim(),
+        condition: editCondition,
+        neighborhood: editNeighborhood,
+        customNeighborhood: editNeighborhood === "Otro" ? editCustomNeighborhood.trim() : "",
+        categories: editCategories,
+        ...(newImageUrl ? { imageUrl: newImageUrl } : {}),
+      };
+
+      if (editIsAdmin) {
+        // Admin editing any product
+        await editProductAdmin(editingProduct.id, editData, getIdToken);
+        setAdminProducts(prev => prev.map(p => p.id === editingProduct.id
+          ? { ...p, ...editData, imageUrl: newImageUrl || p.imageUrl }
+          : p
+        ));
+      } else {
+        // User editing their own product
+        const updated = await updateProductContent(editingProduct.id, user.uid, editData);
+        setMyProducts(prev => prev.map(p => p.id === editingProduct.id ? { ...p, ...editData, imageUrl: newImageUrl || p.imageUrl } : p));
+      }
+
+      setSuccessMessage("¡Publicación actualizada con éxito!");
+      setTimeout(() => setSuccessMessage(null), 4000);
+      closeEditModal();
+    } catch (err: any) {
+      setEditError(err.message || "Error al guardar los cambios.");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+
   // Admin action handlers
   const handleAdminPasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -739,6 +841,7 @@ function MiCuentaContent() {
 
   // CASE 3: FULLY LOGGED IN AND COMPLETED
   return (
+    <>
     <div className="flex flex-col lg:flex-row gap-6 items-start">
       {/* Left Column: Sidebar Navigation */}
       <div className="w-full lg:w-64 shrink-0 bg-white border border-ml-border rounded-lg p-4 shadow-sm flex flex-col gap-2">
@@ -1225,6 +1328,15 @@ function MiCuentaContent() {
                         <Eye size={14} />
                         <span>Ver</span>
                       </a>
+
+                      <button
+                        onClick={() => openEditModal(prod, false)}
+                        className="flex items-center gap-1 border border-blue-200 hover:bg-blue-50 text-blue-600 hover:border-blue-300 rounded text-xs px-3 py-2 font-bold transition"
+                        title="Editar publicación"
+                      >
+                        <Pencil size={14} />
+                        <span>Editar</span>
+                      </button>
 
                       {!isDeactivated ? (
                         <button
@@ -1808,43 +1920,50 @@ function MiCuentaContent() {
                                       </span>
                                     )}
                                   </td>
-                                  <td className="p-3.5 text-right">
-                                    <div className="flex items-center gap-1.5 justify-end">
-                                      <a
-                                        href={`/producto/${prod.id}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="p-1.5 border border-gray-200 hover:border-ml-blue hover:text-ml-blue bg-white rounded transition"
-                                        title="Ver publicación"
-                                      >
-                                        <Eye size={13} />
-                                      </a>
-                                      {isDeact ? (
-                                        <button
-                                          onClick={() => handleAdminReactivate(prod.id)}
-                                          className="p-1.5 border border-gray-200 hover:bg-green-50 hover:text-ml-green bg-white rounded transition"
-                                          title="Activar de nuevo"
+                                    <td className="p-3.5 text-right">
+                                      <div className="flex items-center gap-1.5 justify-end">
+                                        <a
+                                          href={`/producto/${prod.id}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="p-1.5 border border-gray-200 hover:border-ml-blue hover:text-ml-blue bg-white rounded transition"
+                                          title="Ver publicación"
                                         >
-                                          <RefreshCw size={13} />
-                                        </button>
-                                      ) : (
+                                          <Eye size={13} />
+                                        </a>
                                         <button
-                                          onClick={() => handleAdminDeactivate(prod.id)}
-                                          className="p-1.5 border border-amber-200 hover:bg-amber-50 text-amber-600 rounded transition"
-                                          title="Desactivar publicación"
+                                          onClick={() => openEditModal(prod, true)}
+                                          className="p-1.5 border border-blue-200 hover:bg-blue-50 text-blue-600 rounded transition"
+                                          title="Editar publicación"
                                         >
-                                          <PowerOff size={13} />
+                                          <Pencil size={13} />
                                         </button>
-                                      )}
-                                      <button
-                                        onClick={() => handleAdminDeleteProduct(prod.id, prod.imageUrl)}
-                                        className="p-1.5 border border-red-200 hover:bg-red-50 text-red-600 rounded transition"
-                                        title="Eliminar permanentemente"
-                                      >
-                                        <Trash2 size={13} />
-                                      </button>
-                                    </div>
-                                  </td>
+                                        {isDeact ? (
+                                          <button
+                                            onClick={() => handleAdminReactivate(prod.id)}
+                                            className="p-1.5 border border-gray-200 hover:bg-green-50 hover:text-ml-green bg-white rounded transition"
+                                            title="Activar de nuevo"
+                                          >
+                                            <RefreshCw size={13} />
+                                          </button>
+                                        ) : (
+                                          <button
+                                            onClick={() => handleAdminDeactivate(prod.id)}
+                                            className="p-1.5 border border-amber-200 hover:bg-amber-50 text-amber-600 rounded transition"
+                                            title="Desactivar publicación"
+                                          >
+                                            <PowerOff size={13} />
+                                          </button>
+                                        )}
+                                        <button
+                                          onClick={() => handleAdminDeleteProduct(prod.id, prod.imageUrl)}
+                                          className="p-1.5 border border-red-200 hover:bg-red-50 text-red-600 rounded transition"
+                                          title="Eliminar permanentemente"
+                                        >
+                                          <Trash2 size={13} />
+                                        </button>
+                                      </div>
+                                    </td>
                                 </tr>
                               );
                             })
@@ -1913,6 +2032,179 @@ function MiCuentaContent() {
       )}
       </div>
     </div>
+
+    {/* ===== EDIT PRODUCT MODAL ===== */}
+    {editingProduct && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={closeEditModal}>
+        <div
+          className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Modal Header */}
+          <div className="flex items-center justify-between p-5 border-b border-gray-150">
+            <div>
+              <h2 className="text-base font-bold text-ml-dark flex items-center gap-2">
+                <Pencil size={16} className="text-blue-600" />
+                {editIsAdmin ? "Editar publicación (Admin)" : "Editar mi publicación"}
+              </h2>
+              <p className="text-[11px] text-gray-400 mt-0.5 truncate max-w-sm">{editingProduct.title}</p>
+            </div>
+            <button onClick={closeEditModal} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition">
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Modal Form */}
+          <form onSubmit={handleEditSave} className="p-5 space-y-4">
+            {editError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded flex items-start gap-2">
+                <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                <span>{editError}</span>
+              </div>
+            )}
+
+            {/* Title */}
+            <div>
+              <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">Título</label>
+              <input
+                type="text"
+                required
+                maxLength={50}
+                value={editTitle}
+                onChange={e => setEditTitle(e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-ml-dark focus:outline-none focus:border-ml-blue"
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">Descripción</label>
+              <textarea
+                required
+                rows={4}
+                value={editDescription}
+                onChange={e => setEditDescription(e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-ml-dark focus:outline-none focus:border-ml-blue"
+              />
+            </div>
+
+            {/* Categories */}
+            <div>
+              <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">Categorías</label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-gray-50/50 border border-gray-150 rounded-xl p-3">
+                {AVAILABLE_CATEGORIES.map(cat => {
+                  const isChecked = editCategories.includes(cat.value);
+                  return (
+                    <label key={cat.value} className={`flex items-center gap-2 p-2 rounded-lg border text-xs font-semibold cursor-pointer select-none transition ${
+                      isChecked ? "bg-cyan-50/40 border-cyan-300 text-cyan-800" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={e => {
+                          if (e.target.checked) setEditCategories(prev => [...prev, cat.value]);
+                          else setEditCategories(prev => prev.filter(c => c !== cat.value));
+                        }}
+                        className="rounded border-gray-300 text-cyan-600 w-4 h-4 cursor-pointer"
+                      />
+                      <span>{cat.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Condition & Neighborhood */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">Estado</label>
+                <select
+                  value={editCondition}
+                  onChange={e => setEditCondition(e.target.value as any)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 bg-white text-sm text-ml-dark focus:outline-none focus:border-ml-blue"
+                >
+                  <option value="perfecto">Perfecto estado</option>
+                  <option value="buen">Buen estado</option>
+                  <option value="funcional">Estado funcional (Sirve con detalles)</option>
+                  <option value="reparar">Mal estado / A reparar</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">Barrio</label>
+                <select
+                  value={editNeighborhood}
+                  onChange={e => setEditNeighborhood(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 bg-white text-sm text-ml-dark focus:outline-none focus:border-ml-blue"
+                >
+                  <option value="Flores">Flores</option>
+                  <option value="Once">Once</option>
+                  <option value="Barracas">Barracas</option>
+                  <option value="Belgrano">Belgrano</option>
+                  <option value="Palermo">Palermo</option>
+                  <option value="Villa Crespo">Villa Crespo</option>
+                  <option value="Otro">Otro barrio...</option>
+                </select>
+              </div>
+            </div>
+
+            {editNeighborhood === "Otro" && (
+              <div>
+                <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">Especificá el barrio</label>
+                <input
+                  type="text"
+                  required
+                  value={editCustomNeighborhood}
+                  onChange={e => setEditCustomNeighborhood(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-ml-dark focus:outline-none focus:border-ml-blue"
+                />
+              </div>
+            )}
+
+            {/* Image Change (optional) */}
+            <div>
+              <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">Foto (opcional - solo si querés cambiarla)</label>
+              <div className="flex items-center gap-4">
+                <img
+                  src={editImageSrc || editingProduct.imageUrl}
+                  alt="preview"
+                  className="w-16 h-16 object-cover rounded border border-gray-200 bg-gray-50 shrink-0"
+                />
+                <div className="flex-1">
+                  <input
+                    ref={editFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleEditImageChange}
+                    className="w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 cursor-pointer"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1">Dejá vacío para mantener la foto actual.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Submit buttons */}
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-150">
+              <button
+                type="button"
+                onClick={closeEditModal}
+                className="px-4 py-2 text-xs font-bold text-gray-600 border border-gray-300 rounded hover:bg-gray-50 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={editLoading}
+                className="flex items-center gap-2 bg-ml-blue hover:bg-ml-blue-hover disabled:bg-gray-200 text-white font-bold py-2 px-5 rounded text-xs transition shadow-sm"
+              >
+                {editLoading && <Loader2 className="animate-spin" size={14} />}
+                <span>Guardar cambios</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 

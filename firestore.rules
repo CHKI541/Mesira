@@ -27,6 +27,11 @@ service cloud.firestore {
         // Seller rule: full update rights on their own product
         (request.auth != null && resource.data.sellerId == request.auth.uid) ||
         
+        // Seller content edit rule: owner can update only content fields (not contact/view tracking)
+        (request.auth != null && 
+         resource.data.sellerId == request.auth.uid &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'description', 'condition', 'neighborhood', 'customNeighborhood', 'categories', 'imageUrl'])) ||
+        
         // Contact registration rule: only contact-tracking fields can change, and count must increase by 1
         (request.auth != null && 
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['contactCount', 'contactedUserIds', 'isActive', 'deactivatedAt']) &&
