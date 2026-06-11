@@ -815,8 +815,13 @@ export const getAdminDashboardData = async (
     });
 
     if (!res.ok) {
-      const errData = await res.json();
-      throw new Error(errData.error || "Error al cargar los datos de administración");
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        const errData = await res.json();
+        throw new Error(errData.error || `Error ${res.status} al cargar los datos de administración`);
+      } else {
+        throw new Error(`Error del servidor (${res.status}). Por favor verificá que las variables de entorno de Firebase Admin estén configuradas en Vercel.`);
+      }
     }
 
     return await res.json();
@@ -858,8 +863,13 @@ export const deleteUserAdmin = async (
     });
 
     if (!res.ok) {
-      const errData = await res.json();
-      throw new Error(errData.error || "Error al eliminar el usuario");
+      const ct = res.headers.get("content-type") || "";
+      if (ct.includes("application/json")) {
+        const errData = await res.json();
+        throw new Error(errData.error || `Error ${res.status} al eliminar el usuario`);
+      } else {
+        throw new Error(`Error del servidor (${res.status}) al eliminar el usuario.`);
+      }
     }
 
     return await res.json();
@@ -906,8 +916,13 @@ export const deactivateProductAdmin = async (
       body: JSON.stringify({ id, action: "deactivate" })
     });
     if (!res.ok) {
-      const errData = await res.json();
-      throw new Error(errData.error || "Error al desactivar el producto");
+      const ct = res.headers.get("content-type") || "";
+      if (ct.includes("application/json")) {
+        const errData = await res.json();
+        throw new Error(errData.error || `Error ${res.status} al desactivar el producto`);
+      } else {
+        throw new Error(`Error del servidor (${res.status}) al desactivar el producto.`);
+      }
     }
   } else {
     await deactivateProduct(id);
@@ -929,8 +944,13 @@ export const reactivateProductAdmin = async (
       body: JSON.stringify({ id, action: "reactivate" })
     });
     if (!res.ok) {
-      const errData = await res.json();
-      throw new Error(errData.error || "Error al reactivar el producto");
+      const ct = res.headers.get("content-type") || "";
+      if (ct.includes("application/json")) {
+        const errData = await res.json();
+        throw new Error(errData.error || `Error ${res.status} al reactivar el producto`);
+      } else {
+        throw new Error(`Error del servidor (${res.status}) al reactivar el producto.`);
+      }
     }
     const updated = await getProductById(id);
     if (!updated) throw new Error("Producto no encontrado tras reactivación");
@@ -956,8 +976,13 @@ export const deleteProductAdmin = async (
       body: JSON.stringify({ id, imageUrl })
     });
     if (!res.ok) {
-      const errData = await res.json();
-      throw new Error(errData.error || "Error al eliminar el producto");
+      const ct = res.headers.get("content-type") || "";
+      if (ct.includes("application/json")) {
+        const errData = await res.json();
+        throw new Error(errData.error || `Error ${res.status} al eliminar el producto`);
+      } else {
+        throw new Error(`Error del servidor (${res.status}) al eliminar el producto.`);
+      }
     }
   } else {
     await deleteProduct(id, imageUrl);
