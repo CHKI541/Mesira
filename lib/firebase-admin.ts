@@ -9,18 +9,35 @@ let initError: string | null = null;
 
 if (getApps().length === 0) {
   try {
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY
-      ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n")
-      : undefined;
+    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+    if (privateKey) {
+      if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+        privateKey = privateKey.slice(1, -1);
+      }
+      if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
+        privateKey = privateKey.slice(1, -1);
+      }
+      privateKey = privateKey.replace(/\\n/g, "\n");
+    }
 
-    if (!privateKey || !process.env.FIREBASE_CLIENT_EMAIL) {
+    let clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    if (clientEmail) {
+      if (clientEmail.startsWith('"') && clientEmail.endsWith('"')) {
+        clientEmail = clientEmail.slice(1, -1);
+      }
+      if (clientEmail.startsWith("'") && clientEmail.endsWith("'")) {
+        clientEmail = clientEmail.slice(1, -1);
+      }
+    }
+
+    if (!privateKey || !clientEmail) {
       initError = "Variables de entorno de Firebase Admin no configuradas (FIREBASE_PRIVATE_KEY / FIREBASE_CLIENT_EMAIL).";
       console.error("Firebase admin init skipped:", initError);
     } else {
       adminApp = initializeApp({
         credential: cert({
           projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "mesira-argentina",
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          clientEmail: clientEmail,
           privateKey: privateKey,
         }),
         storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "mesira-argentina.firebasestorage.app",

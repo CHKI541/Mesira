@@ -528,6 +528,7 @@ export interface ProductEditData {
   customNeighborhood: string;
   categories: string[];
   imageUrl?: string; // optional: if new image was uploaded
+  maxContacts?: number; // optional: limit of contacts
 }
 
 export const updateProductContent = async (
@@ -549,6 +550,7 @@ export const updateProductContent = async (
       neighborhood: editData.neighborhood,
       customNeighborhood: editData.customNeighborhood,
       categories: editData.categories,
+      maxContacts: editData.maxContacts !== undefined ? editData.maxContacts : 3,
     };
     if (editData.imageUrl) updates.imageUrl = editData.imageUrl;
 

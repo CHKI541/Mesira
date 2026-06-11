@@ -109,6 +109,7 @@ function MiCuentaContent() {
   const [editCategories, setEditCategories] = useState<string[]>([]);
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
   const [editImageSrc, setEditImageSrc] = useState<string | null>(null);
+  const [editMaxContacts, setEditMaxContacts] = useState<number>(3);
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
@@ -529,6 +530,7 @@ function MiCuentaContent() {
     setEditNeighborhood(prod.neighborhood);
     setEditCustomNeighborhood(prod.customNeighborhood || "");
     setEditCategories(prod.categories || []);
+    setEditMaxContacts(prod.maxContacts || 3);
     setEditImageFile(null);
     setEditImageSrc(null);
     setEditError(null);
@@ -574,6 +576,7 @@ function MiCuentaContent() {
         neighborhood: editNeighborhood,
         customNeighborhood: editNeighborhood === "Otro" ? editCustomNeighborhood.trim() : "",
         categories: editCategories,
+        maxContacts: editMaxContacts,
         ...(newImageUrl ? { imageUrl: newImageUrl } : {}),
       };
 
@@ -2159,6 +2162,27 @@ function MiCuentaContent() {
                 />
               </div>
             )}
+
+            {/* Límite de contactos */}
+            <div>
+              <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">
+                Límite de personas que te pueden contactar
+              </label>
+              <select
+                value={editMaxContacts}
+                onChange={e => setEditMaxContacts(parseInt(e.target.value))}
+                className="w-full border border-gray-300 rounded px-3 py-2 bg-white text-sm text-ml-dark focus:outline-none focus:border-ml-blue"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                  <option key={num} value={num}>
+                    Hasta {num} {num === 1 ? "persona" : "personas"} (desactivación automática)
+                  </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-gray-400 mt-1">
+                Cuando esta cantidad de personas distintas te contacten, tu publicación se desactivará automáticamente.
+              </p>
+            </div>
 
             {/* Image Change (optional) */}
             <div>
