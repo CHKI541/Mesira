@@ -17,7 +17,8 @@ import {
   Heart, 
   CheckCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Mail
 } from "lucide-react";
 
 export default function AyudaPage() {
@@ -95,8 +96,31 @@ export default function AyudaPage() {
                 Las publicaciones activas duran hasta 60 días para dar tiempo a que encuentren interesados. Pero si la publicación se desactiva (consigue 3 contactos), desaparecerá definitivamente tras 48 horas.
               </p>
             </div>
+        </div>
+
+        {/* Contact and Support Section */}
+        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1 mt-6">Contacto y Soporte</h2>
+        <div className="bg-white rounded-lg border border-ml-border p-6 shadow-sm mb-6">
+          <div className="flex gap-4 items-start">
+            <div className="shrink-0 text-ml-blue bg-blue-50 w-10 h-10 rounded-full flex items-center justify-center">
+              <Mail size={20} className="text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-ml-dark mb-1">¿Tenés dudas, sugerencias o querés reportar un error?</h3>
+              <p className="text-xs text-gray-500 leading-relaxed mb-4">
+                Si encontrás alguna falla en el funcionamiento de la web, tenés alguna sugerencia para mejorar la red solidaria o querés contactarte con el equipo de soporte de Mesira Argentina, escribinos a nuestra dirección de correo electrónico:
+              </p>
+              <a 
+                href="mailto:soporte@mesira.net" 
+                className="inline-flex items-center gap-2 text-xs bg-ml-blue hover:bg-ml-blue-hover text-white font-bold py-2 px-4 rounded-lg transition shadow-sm"
+              >
+                <Mail size={14} />
+                <span>soporte@mesira.net</span>
+              </a>
+            </div>
           </div>
         </div>
+
         {/* Spacer */}
         <div className="h-8"></div>
       </main>
