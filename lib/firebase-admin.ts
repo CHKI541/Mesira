@@ -14,16 +14,20 @@ if (getApps().length === 0) {
       try {
         // Intentar parsear como JSON si viene con comillas dobles (Vercel a veces lo inyecta así)
         if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
-          privateKey = JSON.parse(privateKey);
+          privateKey = JSON.parse(privateKey) as string;
         } else if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
           privateKey = privateKey.slice(1, -1);
         }
-      } catch (e) {
-        // Fallback en caso de error de parseo
-        privateKey = privateKey.replace(/^["']|["']$/g, "");
+      } catch (_e) {
+        // Fallback en caso de error de parseo: sacar comillas del principio/fin
+        if (privateKey) {
+          privateKey = privateKey.replace(/^["']|["']$/g, "");
+        }
       }
       // Reemplazar saltos de línea literales \n por saltos de línea reales
-      privateKey = privateKey.replace(/\\n/g, "\n");
+      if (privateKey) {
+        privateKey = privateKey.replace(/\\n/g, "\n");
+      }
     }
 
     let clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
