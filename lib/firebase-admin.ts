@@ -9,49 +9,42 @@ let initError: string | null = null;
 
 if (getApps().length === 0) {
   try {
-    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
-    if (privateKey) {
-      try {
-        // Intentar parsear como JSON si viene con comillas dobles (Vercel a veces lo inyecta así)
-        if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
-          privateKey = JSON.parse(privateKey) as string;
-        } else if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
-          privateKey = privateKey.slice(1, -1);
-        }
-      } catch (_e) {
-        // Fallback en caso de error de parseo: sacar comillas del principio/fin
-        if (privateKey) {
-          privateKey = privateKey.replace(/^["']|["']$/g, "");
-        }
-      }
-      // Reemplazar saltos de línea literales \n por saltos de línea reales
-      if (privateKey) {
-        privateKey = privateKey.replace(/\\n/g, "\n");
-      }
-    }
+    // Preferred: full service account JSON in a single env var
+    const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
-    let clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    if (clientEmail) {
-      if (clientEmail.startsWith('"') && clientEmail.endsWith('"')) {
-        clientEmail = clientEmail.slice(1, -1);
-      }
-      if (clientEmail.startsWith("'") && clientEmail.endsWith("'")) {
-        clientEmail = clientEmail.slice(1, -1);
-      }
-    }
-
-    if (!privateKey || !clientEmail) {
-      initError = "Variables de entorno de Firebase Admin no configuradas (FIREBASE_PRIVATE_KEY / FIREBASE_CLIENT_EMAIL).";
-      console.error("Firebase admin init skipped:", initError);
-    } else {
+    if (serviceAccountJson) {
+      const serviceAccount = JSON.parse(serviceAccountJson);
       adminApp = initializeApp({
-        credential: cert({
-          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "mesira-argentina",
-          clientEmail: clientEmail,
-          privateKey: privateKey,
-        }),
+        credential: cert(serviceAccount),
         storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "mesira-argentina.firebasestorage.app",
       });
+    } else {
+      // Fallback: individual env vars
+      let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+
+      if (!privateKey || !clientEmail) {
+        initError = "Variables de entorno de Firebase Admin no configuradas (FIREBASE_SERVICE_ACCOUNT_KEY o FIREBASE_PRIVATE_KEY / FIREBASE_CLIENT_EMAIL).";
+        console.error("Firebase admin init skipped:", initError);
+      } else {
+        // Clean up the private key
+        if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+          try { privateKey = JSON.parse(privateKey) as string; } catch { /* ignore */ }
+        }
+        privateKey = privateKey.replace(/\\n/g, "\n");
+
+        adminApp = initializeApp({
+          credential: cert({
+            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "mesira-argentina",
+            clientEmail,
+            privateKey,
+          }),
+          storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "mesira-argentina.firebasestorage.app",
+        });
+      }
+    }
+
+    if (adminApp) {
       _adminAuth = getAuth(adminApp);
       _adminDb = getFirestore(adminApp);
     }
