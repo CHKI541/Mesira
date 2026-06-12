@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
 import { getStorage } from "firebase-admin/storage";
 
+export const dynamic = "force-dynamic";
+
 const allowedAdmins = ["israel.chueke@gmail.com", "eli2626cohen@gmail.com"];
 
 async function verifyAdmin(request: Request) {

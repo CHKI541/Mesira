@@ -11,12 +11,18 @@ if (getApps().length === 0) {
   try {
     let privateKey = process.env.FIREBASE_PRIVATE_KEY;
     if (privateKey) {
-      if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
-        privateKey = privateKey.slice(1, -1);
+      try {
+        // Intentar parsear como JSON si viene con comillas dobles (Vercel a veces lo inyecta así)
+        if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+          privateKey = JSON.parse(privateKey);
+        } else if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
+          privateKey = privateKey.slice(1, -1);
+        }
+      } catch (e) {
+        // Fallback en caso de error de parseo
+        privateKey = privateKey.replace(/^["']|["']$/g, "");
       }
-      if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
-        privateKey = privateKey.slice(1, -1);
-      }
+      // Reemplazar saltos de línea literales \n por saltos de línea reales
       privateKey = privateKey.replace(/\\n/g, "\n");
     }
 
