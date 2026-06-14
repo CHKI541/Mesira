@@ -14,7 +14,7 @@ interface AuthContextType {
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   logOut: () => Promise<void>;
-  completeRegistrationDetails: (name: string, lastName: string, phone: string, email?: string) => Promise<void>;
+  completeRegistrationDetails: (name: string, lastName: string, phone: string, kehila: string, email?: string) => Promise<void>;
   isOnboardingCompleted: boolean;
   setIsOnboardingCompleted: (val: boolean) => void;
   isFirebaseActive: boolean;
@@ -73,6 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               name: profile.name,
               lastName: profile.lastName,
               phone: profile.phone,
+              kehila: profile.kehila || "",
               isPhoneVerified: profile.isPhoneVerified,
               createdAt: profile.createdAt
             });
@@ -85,6 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               name: "",
               lastName: "",
               phone: "",
+              kehila: "",
               isPhoneVerified: false,
               createdAt: new Date()
             });
@@ -124,6 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             name: profile.name,
             lastName: profile.lastName,
             phone: profile.phone,
+            kehila: profile.kehila || "",
             isPhoneVerified: profile.isPhoneVerified,
             createdAt: profile.createdAt
           });
@@ -135,6 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             name: "",
             lastName: "",
             phone: "",
+            kehila: "",
             isPhoneVerified: false,
             createdAt: new Date()
           });
@@ -148,6 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           name: "",
           lastName: "",
           phone: "",
+          kehila: "",
           isPhoneVerified: false,
           createdAt: Date.now()
         };
@@ -181,7 +186,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Complete registration fields (marked as verified immediately)
-  const completeRegistrationDetails = async (name: string, lastName: string, phone: string, email?: string) => {
+  const completeRegistrationDetails = async (name: string, lastName: string, phone: string, kehila: string, email?: string) => {
     if (!user) throw new Error("No user is logged in");
 
     // Save profile to database directly with isPhoneVerified: true
@@ -190,6 +195,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name,
       lastName,
       phone,
+      kehila,
       isPhoneVerified: true
     });
 
@@ -198,6 +204,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name,
       lastName,
       phone,
+      kehila,
       email: email || user.email || "",
       isPhoneVerified: true,
       createdAt: finalProfile.createdAt

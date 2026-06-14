@@ -52,6 +52,7 @@ export interface UserProfile {
   name: string;
   lastName: string;
   phone: string;
+  kehila: string;
   isPhoneVerified: boolean;
   createdAt: any;
 }

@@ -24,6 +24,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [name, setName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phoneDigits, setPhoneDigits] = useState(""); // 10 digits, e.g. 1134567890
+  const [kehila, setKehila] = useState("");
   
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -34,7 +35,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
     if (!user) {
       setStep('login');
-    } else if (!user.name || !user.lastName || !user.phone) {
+    } else if (!user.name || !user.lastName || !user.phone || !user.kehila) {
       setStep('details');
     } else {
       setStep('success');
@@ -65,13 +66,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     if (!/^\d{10}$/.test(phoneDigits)) {
       return setError("El número de celular debe tener exactamente 10 dígitos (característica sin 0 + número sin 15).");
     }
+    if (!kehila.trim()) return setError("Por favor, ingresá tu Kehila.");
 
     const fullPhoneNumber = `+549${phoneDigits}`;
     setLoading(true);
 
     try {
       // Save data to backend directly (which marks isPhoneVerified as true)
-      await completeRegistrationDetails(name.trim(), lastName.trim(), fullPhoneNumber);
+      await completeRegistrationDetails(name.trim(), lastName.trim(), fullPhoneNumber, kehila.trim());
       
       setStep('success');
       if (onSuccess) onSuccess();
@@ -201,6 +203,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                   <p className="text-[11px] text-gray-400 mt-1.5 leading-tight">
                     Ingresá el código de área (sin el 0) y el número (sin el 15). Debe tener exactamente 10 dígitos.
                   </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">Kehila</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ej. Templo Paso / Jabad / Sucath David"
+                    value={kehila}
+                    onChange={(e) => setKehila(e.target.value)}
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-ml-dark focus:outline-none focus:border-ml-blue"
+                  />
                 </div>
 
                 <button

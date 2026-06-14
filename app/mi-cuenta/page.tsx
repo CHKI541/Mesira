@@ -124,6 +124,7 @@ function MiCuentaContent() {
   const [profileLastName, setProfileLastName] = useState("");
   const [profilePhone, setProfilePhone] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
+  const [profileKehila, setProfileKehila] = useState("");
   const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -168,6 +169,7 @@ function MiCuentaContent() {
   const [regName, setRegName] = useState("");
   const [regLastName, setRegLastName] = useState("");
   const [regPhone, setRegPhone] = useState("");
+  const [regKehila, setRegKehila] = useState("");
   const [regLoading, setRegLoading] = useState(false);
   const [regError, setRegError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -244,6 +246,7 @@ function MiCuentaContent() {
       if (!user.isPhoneVerified) {
         setRegName(user.name || "");
         setRegLastName(user.lastName || "");
+        setRegKehila(user.kehila || "");
         if (user.phone) {
           setRegPhone(user.phone.replace("+549", ""));
         }
@@ -253,6 +256,7 @@ function MiCuentaContent() {
         setProfileLastName(user.lastName || "");
         setProfilePhone(user.phone ? user.phone.replace("+549", "") : "");
         setProfileEmail(user.email || "");
+        setProfileKehila(user.kehila || "");
         // Pre-fill publication contact number (if not already modified)
         setPubPhone(prev => prev || (user.phone ? user.phone.replace("+549", "") : ""));
       }
@@ -273,11 +277,12 @@ function MiCuentaContent() {
     if (!/^\d{10}$/.test(profilePhone)) {
       return setProfileError("El número de celular debe tener exactamente 10 dígitos (Ej: 1134567890).");
     }
+    if (!profileKehila.trim()) return setProfileError("Ingresá tu Kehila.");
 
     const fullPhone = `+549${profilePhone}`;
     setProfileLoading(true);
     try {
-      await completeRegistrationDetails(profileName.trim(), profileLastName.trim(), fullPhone, profileEmail.trim());
+      await completeRegistrationDetails(profileName.trim(), profileLastName.trim(), fullPhone, profileKehila.trim(), profileEmail.trim());
       setProfileSuccess("¡Tus datos de perfil fueron actualizados con éxito!");
       setPubPhone(profilePhone);
     } catch (err: any) {
@@ -769,11 +774,12 @@ function MiCuentaContent() {
     if (!/^\d{10}$/.test(regPhone)) {
       return setRegError("El número debe tener 10 dígitos (Ej: 1134567890).");
     }
+    if (!regKehila.trim()) return setRegError("Ingresá tu Kehila.");
 
     const fullPhone = `+549${regPhone}`;
     setRegLoading(true);
     try {
-      await completeRegistrationDetails(regName.trim(), regLastName.trim(), fullPhone);
+      await completeRegistrationDetails(regName.trim(), regLastName.trim(), fullPhone, regKehila.trim());
     } catch (err: any) {
       setRegError(err.message || "Error de registro.");
     } finally {
@@ -800,8 +806,15 @@ function MiCuentaContent() {
       (u.name && u.name.toLowerCase().includes(q)) ||
       (u.lastName && u.lastName.toLowerCase().includes(q)) ||
       (u.email && u.email.toLowerCase().includes(q)) ||
-      (u.phone && u.phone.includes(q))
+      (u.phone && u.phone.includes(q)) ||
+      (u.kehila && u.kehila.toLowerCase().includes(q))
     );
+  }).sort((a, b) => {
+    const kehilaA = (a.kehila || "").toLowerCase().trim();
+    const kehilaB = (b.kehila || "").toLowerCase().trim();
+    if (!kehilaA && kehilaB) return 1;
+    if (kehilaA && !kehilaB) return -1;
+    return kehilaA.localeCompare(kehilaB);
   });
 
   // Loading indicator for auth check
@@ -894,6 +907,17 @@ function MiCuentaContent() {
               <p className="text-[11px] text-gray-400 mt-1.5 leading-tight">
                 Código de área sin el 0 y número celular sin el 15. Debe tener exactamente 10 dígitos.
               </p>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">Kehila</label>
+              <input
+                type="text"
+                required
+                placeholder="Ej. Templo Paso / Jabad / Sucath David"
+                value={regKehila}
+                onChange={(e) => setRegKehila(e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-ml-dark focus:outline-none focus:border-ml-blue"
+              />
             </div>
             <button
               type="submit"
@@ -1558,6 +1582,17 @@ function MiCuentaContent() {
                 className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-ml-dark focus:outline-none focus:border-ml-blue"
               />
             </div>
+            <div>
+              <label className="block text-xs font-bold text-ml-dark uppercase tracking-wider mb-1.5">Kehila</label>
+              <input
+                type="text"
+                required
+                placeholder="Ej. Templo Paso / Jabad / Sucath David"
+                value={profileKehila}
+                onChange={(e) => setProfileKehila(e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-ml-dark focus:outline-none focus:border-ml-blue"
+              />
+            </div>
             <button
               type="submit"
               disabled={profileLoading}
@@ -2095,6 +2130,7 @@ function MiCuentaContent() {
                           <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 font-bold uppercase tracking-wider">
                             <th className="p-3.5">Nombre / Apellido</th>
                             <th className="p-3.5">Email</th>
+                            <th className="p-3.5">Kehila</th>
                             <th className="p-3.5">Celular</th>
                             <th className="p-3.5">Fecha Registro</th>
                             <th className="p-3.5 text-right">Acciones</th>
@@ -2103,7 +2139,7 @@ function MiCuentaContent() {
                         <tbody className="divide-y divide-gray-150">
                           {filteredAdminUsers.length === 0 ? (
                             <tr>
-                              <td colSpan={5} className="p-8 text-center text-gray-400 italic">
+                              <td colSpan={6} className="p-8 text-center text-gray-400 italic">
                                 No se encontraron usuarios.
                               </td>
                             </tr>
@@ -2116,6 +2152,7 @@ function MiCuentaContent() {
                                     {usr.name || usr.lastName ? `${usr.name} ${usr.lastName}`.trim() : "Sin completar"}
                                   </td>
                                   <td className="p-3.5 text-gray-600 font-medium">{usr.email}</td>
+                                  <td className="p-3.5 text-gray-600 font-medium">{usr.kehila || "No especificada"}</td>
                                   <td className="p-3.5 text-gray-600 font-mono">
                                     {usr.phone ? usr.phone : "No registrado"}
                                   </td>
