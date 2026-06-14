@@ -943,7 +943,7 @@ function MiCuentaContent() {
               <input
                 type="text"
                 required
-                placeholder="Ej. Templo Paso / Jabad / Sucath David"
+                placeholder=""
                 value={regKehila}
                 onChange={(e) => setRegKehila(e.target.value)}
                 className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-ml-dark focus:outline-none focus:border-ml-blue"
@@ -1617,7 +1617,7 @@ function MiCuentaContent() {
               <input
                 type="text"
                 required
-                placeholder="Ej. Templo Paso / Jabad / Sucath David"
+                placeholder=""
                 value={profileKehila}
                 onChange={(e) => setProfileKehila(e.target.value)}
                 className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-ml-dark focus:outline-none focus:border-ml-blue"

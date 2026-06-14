@@ -210,7 +210,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                   <input
                     type="text"
                     required
-                    placeholder="Ej. Templo Paso / Jabad / Sucath David"
+                    placeholder=""
                     value={kehila}
                     onChange={(e) => setKehila(e.target.value)}
                     className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-ml-dark focus:outline-none focus:border-ml-blue"
