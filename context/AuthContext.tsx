@@ -66,6 +66,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Fetch additional profile from Firestore
           const profile = await getUserProfile(firebaseUser.uid);
           if (profile) {
+            if (profile.disabled) {
+              await signOut(auth);
+              setUser(null);
+              setLoading(false);
+              alert("Tu cuenta ha sido desactivada por el administrador. Contactate con soporte.");
+              return;
+            }
             setUser({
               uid: firebaseUser.uid,
               email: firebaseUser.email || "",
@@ -74,6 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               lastName: profile.lastName,
               phone: profile.phone,
               kehila: profile.kehila || "",
+              disabled: profile.disabled || false,
               isPhoneVerified: profile.isPhoneVerified,
               createdAt: profile.createdAt
             });
@@ -119,6 +127,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const profile = await getUserProfile(firebaseUser.uid);
         
         if (profile) {
+          if (profile.disabled) {
+            await signOut(auth);
+            setUser(null);
+            setLoading(false);
+            alert("Tu cuenta ha sido desactivada por el administrador. Contactate con soporte.");
+            return;
+          }
           setUser({
             uid: firebaseUser.uid,
             email: firebaseUser.email || "",
@@ -127,6 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             lastName: profile.lastName,
             phone: profile.phone,
             kehila: profile.kehila || "",
+            disabled: profile.disabled || false,
             isPhoneVerified: profile.isPhoneVerified,
             createdAt: profile.createdAt
           });

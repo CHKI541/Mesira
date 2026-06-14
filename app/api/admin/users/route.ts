@@ -73,3 +73,55 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
   }
 }
+
+export async function PUT(request: Request) {
+  try {
+    const authHeader = request.headers.get("authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json({ error: "No autorizado. Token faltante." }, { status: 401 });
+    }
+
+    const token = authHeader.split("Bearer ")[1];
+    let decodedToken;
+    try {
+      decodedToken = await adminAuth.verifyIdToken(token);
+    } catch (err) {
+      return NextResponse.json({ error: "Token inválido o expirado." }, { status: 401 });
+    }
+
+    // Check if the user is the administrator
+    const allowedAdmins = ["israel.chueke@gmail.com", "eli2626cohen@gmail.com"];
+    if (!allowedAdmins.includes(decodedToken.email || "")) {
+      return NextResponse.json({ error: "No tienes permisos de administrador." }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { uid, action } = body; // action: "disable" | "enable"
+
+    if (!uid || !action) {
+      return NextResponse.json({ error: "UID y acción requeridos." }, { status: 400 });
+    }
+
+    if (action === "disable") {
+      // 1. Disable in Firebase Auth
+      await adminAuth.updateUser(uid, { disabled: true });
+      // 2. Mark as disabled in Firestore
+      await adminDb.collection("users").doc(uid).update({ disabled: true });
+    } else if (action === "enable") {
+      // 1. Enable in Firebase Auth
+      await adminAuth.updateUser(uid, { disabled: false });
+      // 2. Mark as active in Firestore
+      await adminDb.collection("users").doc(uid).update({ disabled: false });
+    } else {
+      return NextResponse.json({ error: "Acción inválida." }, { status: 400 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Usuario ${uid} ${action === "disable" ? "desactivado" : "activado"} correctamente.`,
+    });
+  } catch (error: any) {
+    console.error("Admin user status update error:", error);
+    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+  }
+}

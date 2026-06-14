@@ -54,6 +54,7 @@ export interface UserProfile {
   phone: string;
   kehila: string;
   isPhoneVerified: boolean;
+  disabled?: boolean;
   createdAt: any;
 }
 
@@ -955,6 +956,44 @@ export const deleteUserAdmin = async (
     saveMockAlerts(filteredAlerts);
 
     return { success: true, deletedProductsCount };
+  }
+};
+
+export const toggleUserStatusAdmin = async (
+  uid: string,
+  action: "disable" | "enable",
+  getIdTokenFn: () => Promise<string>
+): Promise<{ success: boolean; message: string }> => {
+  if (isFirebaseConfigured) {
+    const token = await getIdTokenFn();
+    const res = await fetch("/api/admin/users", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ uid, action })
+    });
+
+    if (!res.ok) {
+      const ct = res.headers.get("content-type") || "";
+      if (ct.includes("application/json")) {
+        const errData = await res.json();
+        throw new Error(errData.error || `Error ${res.status} al cambiar estado del usuario`);
+      } else {
+        throw new Error(`Error del servidor (${res.status}) al cambiar estado del usuario.`);
+      }
+    }
+
+    return await res.json();
+  } else {
+    // Mock Mode
+    const users = getMockUsers();
+    if (users[uid]) {
+      users[uid].disabled = action === "disable";
+      saveMockUsers(users);
+    }
+    return { success: true, message: `Usuario modificado localmente.` };
   }
 };
 

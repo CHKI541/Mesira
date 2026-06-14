@@ -20,6 +20,7 @@ import {
   Alert,
   getAdminDashboardData,
   deleteUserAdmin,
+  toggleUserStatusAdmin,
   UserProfile,
   deactivateProductAdmin,
   reactivateProductAdmin,
@@ -49,6 +50,8 @@ import {
   Shield,
   Search,
   Pencil,
+  UserX,
+  UserCheck,
   X
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -758,6 +761,33 @@ function MiCuentaContent() {
     } catch (err: any) {
       console.error(err);
       setDashboardError(err.message || "No se pudo eliminar al usuario.");
+    } finally {
+      setLoadingAdminData(false);
+    }
+  };
+
+  const handleAdminToggleUserStatus = async (uid: string, userEmail: string, currentDisabled: boolean) => {
+    const action = currentDisabled ? "enable" : "disable";
+    const confirmMessage = currentDisabled 
+      ? `¿Estás seguro de que querés volver a activar la cuenta de ${userEmail}?`
+      : `¿Estás seguro de que querés desactivar la cuenta de ${userEmail}? El usuario será deslogueado y no podrá ingresar.`;
+
+    if (!confirm(confirmMessage)) return;
+
+    setDashboardError(null);
+    setLoadingAdminData(true);
+    try {
+      await toggleUserStatusAdmin(uid, action, getIdToken);
+      
+      setAdminUsers(prev => 
+        prev.map(u => u.uid === uid ? { ...u, disabled: action === "disable" } : u)
+      );
+      
+      setSuccessMessage(`Usuario ${action === "disable" ? "desactivado" : "activado"} con éxito.`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err: any) {
+      console.error(err);
+      setDashboardError(err.message || "No se pudo cambiar el estado del usuario.");
     } finally {
       setLoadingAdminData(false);
     }
@@ -2149,7 +2179,14 @@ function MiCuentaContent() {
                               return (
                                 <tr key={usr.uid} className="hover:bg-gray-50/50">
                                   <td className="p-3.5 font-bold text-ml-dark">
-                                    {usr.name || usr.lastName ? `${usr.name} ${usr.lastName}`.trim() : "Sin completar"}
+                                    <div className="flex items-center gap-1.5">
+                                      <span>{usr.name || usr.lastName ? `${usr.name} ${usr.lastName}`.trim() : "Sin completar"}</span>
+                                      {usr.disabled && (
+                                        <span className="px-1.5 py-0.5 text-[9px] bg-red-100 text-red-700 font-bold rounded-md uppercase tracking-wider scale-90 origin-left">
+                                          Inactivo
+                                        </span>
+                                      )}
+                                    </div>
                                   </td>
                                   <td className="p-3.5 text-gray-600 font-medium">{usr.email}</td>
                                   <td className="p-3.5 text-gray-600 font-medium">{usr.kehila || "No especificada"}</td>
@@ -2158,14 +2195,35 @@ function MiCuentaContent() {
                                   </td>
                                   <td className="p-3.5 text-gray-400">{dateStr}</td>
                                   <td className="p-3.5 text-right">
-                                    <button
-                                      onClick={() => handleAdminDeleteUser(usr.uid, usr.email)}
-                                      disabled={["israel.chueke@gmail.com", "eli2626cohen@gmail.com"].includes(usr.email)}
-                                      className="p-1.5 border border-red-200 hover:bg-red-50 text-red-600 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                      title={["israel.chueke@gmail.com", "eli2626cohen@gmail.com"].includes(usr.email) ? "No se puede eliminar a un administrador" : "Eliminar usuario"}
-                                    >
-                                      <Trash2 size={13} />
-                                    </button>
+                                    <div className="flex items-center gap-1.5 justify-end">
+                                      {usr.disabled ? (
+                                        <button
+                                          onClick={() => handleAdminToggleUserStatus(usr.uid, usr.email, true)}
+                                          disabled={["israel.chueke@gmail.com", "eli2626cohen@gmail.com"].includes(usr.email)}
+                                          className="p-1.5 border border-green-200 hover:bg-green-50 text-green-600 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                          title={["israel.chueke@gmail.com", "eli2626cohen@gmail.com"].includes(usr.email) ? "No se puede modificar a un administrador" : "Activar usuario"}
+                                        >
+                                          <UserCheck size={13} />
+                                        </button>
+                                      ) : (
+                                        <button
+                                          onClick={() => handleAdminToggleUserStatus(usr.uid, usr.email, false)}
+                                          disabled={["israel.chueke@gmail.com", "eli2626cohen@gmail.com"].includes(usr.email)}
+                                          className="p-1.5 border border-amber-200 hover:bg-amber-50 text-amber-600 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                          title={["israel.chueke@gmail.com", "eli2626cohen@gmail.com"].includes(usr.email) ? "No se puede modificar a un administrador" : "Desactivar usuario"}
+                                        >
+                                          <UserX size={13} />
+                                        </button>
+                                      )}
+                                      <button
+                                        onClick={() => handleAdminDeleteUser(usr.uid, usr.email)}
+                                        disabled={["israel.chueke@gmail.com", "eli2626cohen@gmail.com"].includes(usr.email)}
+                                        className="p-1.5 border border-red-200 hover:bg-red-50 text-red-600 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title={["israel.chueke@gmail.com", "eli2626cohen@gmail.com"].includes(usr.email) ? "No se puede eliminar a un administrador" : "Eliminar usuario"}
+                                      >
+                                        <Trash2 size={13} />
+                                      </button>
+                                    </div>
                                   </td>
                                 </tr>
                               );
