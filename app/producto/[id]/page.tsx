@@ -316,9 +316,13 @@ export default function ProductDetailPage() {
                   ) : (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-5 max-w-sm text-center shadow-md">
                       <AlertCircle className="mx-auto text-red-600 mb-2" size={32} />
-                      <h3 className="font-bold text-red-800 text-sm">Publicación desactivada</h3>
+                      <h3 className="font-bold text-red-800 text-sm">
+                        {reachedLimit ? "Límite de contactos alcanzado" : "Publicación desactivada"}
+                      </h3>
                       <p className="text-xs text-red-600 mt-1 leading-relaxed">
-                        Este producto ya recibió el límite de contactos permitidos o superó las 48 horas de vigencia y fue retirado.
+                        {reachedLimit 
+                          ? "Este producto ya recibió el límite de contactos permitidos." 
+                          : "Publicación desactivada por el publicador."}
                       </p>
                       {reachedLimit && (
                         <div className="mt-3 pt-3 border-t border-red-100 flex flex-col items-center">
