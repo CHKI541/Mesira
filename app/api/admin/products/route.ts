@@ -41,6 +41,7 @@ export async function POST(request: Request) {
         createdAt: new Date(),
         contactCount: 0,
         contactedUserIds: [],
+        isDelivered: false,
         deactivatedAt: null,
       });
     }

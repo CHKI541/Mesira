@@ -60,7 +60,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         />
         
         {/* Condition Badge or Deactivated Badge */}
-        {!product.isActive ? (
+        {product.isDelivered ? (
+          <span className="absolute top-2 left-2 text-[10px] font-black bg-[#E6F4F8] text-[#006080] border border-[#BDE0EB] px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider">
+            Entregado
+          </span>
+        ) : !product.isActive ? (
           <span className="absolute top-2 left-2 text-[10px] font-black bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider">
             Desactivado
           </span>
@@ -94,7 +98,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
 
           {/* Remaining contacts/intentos */}
-          {!product.isActive ? (
+          {product.isDelivered ? (
+            <div className="inline-flex text-[10px] font-bold text-[#006080] bg-[#E6F4F8] px-1.5 py-0.5 rounded border border-[#BDE0EB] mt-1 flex items-center">
+              Entregado
+            </div>
+          ) : !product.isActive ? (
             <div className="inline-flex text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded border border-red-100 mt-1 flex items-center">
               Sin contactos disponibles
             </div>

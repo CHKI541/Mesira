@@ -11,6 +11,7 @@ import {
   createProduct, 
   reactivateProduct, 
   deactivateProduct,
+  deliverProduct,
   deleteProduct, 
   uploadProductImage,
   Product,
@@ -36,6 +37,7 @@ import {
   AlertTriangle, 
   Loader2, 
   CheckCircle, 
+  Check,
   Eye, 
   Trash2, 
   RefreshCw, 
@@ -453,6 +455,27 @@ function MiCuentaContent() {
       );
     } catch (err) {
       setDashboardError("No se pudo reactivar la publicación.");
+    }
+  };
+
+  // Mark as delivered handler
+  const handleMarkAsDelivered = async (id: string) => {
+    if (!confirm("¿Estás seguro de que querés marcar esta publicación como ENTREGADA? Dejará de mostrarse como disponible y figurará como entregada.")) return;
+    setDashboardError(null);
+    try {
+      await deliverProduct(id);
+      setMyProducts(prev => 
+        prev.map(p => {
+          if (p.id === id) {
+            return { ...p, isActive: false, isDelivered: true, deactivatedAt: Date.now() };
+          }
+          return p;
+        })
+      );
+      setSuccessMessage("Publicación marcada como entregada.");
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      setDashboardError("No se pudo marcar la publicación como entregada.");
     }
   };
 
@@ -1467,7 +1490,11 @@ function MiCuentaContent() {
                         </p>
                         
                         <div className="flex flex-wrap items-center gap-2 mt-2">
-                          {isDeactivated ? (
+                          {prod.isDelivered ? (
+                            <span className="text-[9px] font-bold bg-[#E6F4F8] text-[#006080] px-2 py-0.5 rounded border border-[#BDE0EB] uppercase tracking-wide">
+                              Entregado
+                            </span>
+                          ) : isDeactivated ? (
                             <span className="text-[9px] font-bold bg-red-50 text-red-600 px-2 py-0.5 rounded border border-red-200 uppercase tracking-wide">
                               {isExpiredActive ? "Expirado (60 días)" : isExpiredDeactivated ? "Expirado (48 hs)" : "Desactivado"}
                             </span>
@@ -1507,14 +1534,24 @@ function MiCuentaContent() {
                       </button>
 
                       {!isDeactivated ? (
-                        <button
-                          onClick={() => handleDeactivate(prod.id)}
-                          className="flex items-center gap-1 border border-amber-200 hover:bg-amber-50 text-amber-600 hover:border-amber-300 rounded text-xs px-3 py-2 font-bold transition"
-                          title="Desactivar publicación"
-                        >
-                          <PowerOff size={14} />
-                          <span>Desactivar</span>
-                        </button>
+                        <>
+                          <button
+                            onClick={() => handleMarkAsDelivered(prod.id)}
+                            className="flex items-center gap-1 border border-teal-200 hover:bg-[#E6F4F8] text-[#006080] hover:border-[#BDE0EB] rounded text-xs px-3 py-2 font-bold transition"
+                            title="Marcar como entregado"
+                          >
+                            <Check size={14} />
+                            <span>Entregado</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeactivate(prod.id)}
+                            className="flex items-center gap-1 border border-amber-200 hover:bg-amber-50 text-amber-600 hover:border-amber-300 rounded text-xs px-3 py-2 font-bold transition"
+                            title="Desactivar publicación"
+                          >
+                            <PowerOff size={14} />
+                            <span>Desactivar</span>
+                          </button>
+                        </>
                       ) : (
                         <button
                           onClick={() => handleReactivate(prod.id)}
@@ -2089,7 +2126,11 @@ function MiCuentaContent() {
                                     </div>
                                   </td>
                                   <td className="p-3.5">
-                                    {isDeact ? (
+                                    {prod.isDelivered ? (
+                                      <span className="text-[9px] font-bold bg-[#E6F4F8] text-[#006080] px-1.5 py-0.5 rounded border border-[#BDE0EB] uppercase">
+                                        Entregado
+                                      </span>
+                                    ) : isDeact ? (
                                       <span className="text-[9px] font-bold bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-150 uppercase">
                                         Desactivado
                                       </span>

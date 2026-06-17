@@ -39,6 +39,8 @@ export interface Product {
   maxContacts?: number;
   contactedUserIds?: string[];
   deactivatedAt?: any;
+  isDelivered?: boolean;
+  reactivationRequested?: boolean;
   viewedUserIds?: string[];
   contactPreferences?: string[];
   sellerEmail?: string;
@@ -691,6 +693,8 @@ export const reactivateProduct = async (id: string): Promise<Product> => {
       contactCount: 0,
       contactedUserIds: [], // Bug #4 fix: reset contacted users so they can contact again
       isActive: true,
+      isDelivered: false,
+      reactivationRequested: false,
       deactivatedAt: null
     };
     await updateDoc(docRef, updates);
@@ -710,6 +714,8 @@ export const reactivateProduct = async (id: string): Promise<Product> => {
     products[index].contactCount = 0;
     products[index].contactedUserIds = []; // Bug #4 fix: reset contacted users
     products[index].isActive = true;
+    products[index].isDelivered = false;
+    products[index].reactivationRequested = false;
     delete products[index].deactivatedAt;
 
     saveMockProducts(products);
@@ -731,6 +737,28 @@ export const deactivateProduct = async (id: string): Promise<void> => {
     const index = products.findIndex(p => p.id === id);
     if (index !== -1) {
       products[index].isActive = false;
+      products[index].deactivatedAt = now.getTime();
+      saveMockProducts(products);
+    }
+  }
+};
+
+// 6c. Deliver Product
+export const deliverProduct = async (id: string): Promise<void> => {
+  const now = new Date();
+  if (isFirebaseConfigured) {
+    const docRef = doc(db, "products", id);
+    await updateDoc(docRef, {
+      isActive: false,
+      isDelivered: true,
+      deactivatedAt: now
+    });
+  } else {
+    const products = getMockProducts();
+    const index = products.findIndex(p => p.id === id);
+    if (index !== -1) {
+      products[index].isActive = false;
+      products[index].isDelivered = true;
       products[index].deactivatedAt = now.getTime();
       saveMockProducts(products);
     }

@@ -16,10 +16,12 @@ import {
   Phone, 
   AlertCircle, 
   Check, 
+  CheckCircle,
   ExternalLink,
   MessageSquare,
   ShieldCheck,
-  Mail
+  Mail,
+  Loader2
 } from "lucide-react";
 
 export default function ProductDetailPage() {
@@ -35,6 +37,8 @@ export default function ProductDetailPage() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [hasContacted, setHasContacted] = useState(false);
   const [contactLoading, setContactLoading] = useState(false);
+  const [reactivationSending, setReactivationSending] = useState(false);
+  const [localReactivationRequested, setLocalReactivationRequested] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionOnboardingClosed, setSessionOnboardingClosed] = useState(false);
 
@@ -86,6 +90,42 @@ export default function ProductDetailPage() {
       setHasContacted(alreadyContacted);
     }
   }, [productId]);
+
+  // Check if user has already requested reactivation in this session
+  useEffect(() => {
+    if (typeof window !== "undefined" && productId) {
+      const alreadyRequested = sessionStorage.getItem(`reactivation_requested_${productId}`) === "true";
+      if (alreadyRequested) {
+        setLocalReactivationRequested(true);
+      }
+    }
+  }, [productId]);
+
+  const handleRequestReactivation = async () => {
+    if (!productId) return;
+    setReactivationSending(true);
+    try {
+      const res = await fetch("/api/products/request-reactivation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ productId })
+      });
+      if (!res.ok) {
+        throw new Error("Failed to request reactivation");
+      }
+      setLocalReactivationRequested(true);
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(`reactivation_requested_${productId}`, "true");
+      }
+    } catch (err) {
+      console.error("Error requesting reactivation:", err);
+      alert("No se pudo enviar la solicitud de reactivación.");
+    } finally {
+      setReactivationSending(false);
+    }
+  };
 
   const handleContactClick = async () => {
     setError(null);
@@ -259,17 +299,57 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {isDeactivated && (
-              <div className="absolute inset-0 bg-white/75 backdrop-blur-[1px] flex flex-col items-center justify-center p-4">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-5 max-w-sm text-center shadow-md">
-                  <AlertCircle className="mx-auto text-red-600 mb-2" size={32} />
-                  <h3 className="font-bold text-red-800 text-sm">Publicación desactivada</h3>
-                  <p className="text-xs text-red-600 mt-1 leading-relaxed">
-                    Este producto ya recibió el límite de contactos permitidos o superó las 48 horas de vigencia y fue retirado.
-                  </p>
+            {isDeactivated && (() => {
+              const reachedLimit = product.contactCount >= (product.maxContacts || 3);
+              const isReactivationRequested = product.reactivationRequested || localReactivationRequested;
+              return (
+                <div className="absolute inset-0 bg-white/75 backdrop-blur-[1px] flex flex-col items-center justify-center p-4">
+                  {product.isDelivered ? (
+                    <div className="bg-[#E6F4F8] border border-[#BDE0EB] rounded-lg p-5 max-w-sm text-center shadow-md">
+                      <CheckCircle className="mx-auto text-[#006080] mb-2" size={32} />
+                      <h3 className="font-bold text-[#004d66] text-sm">Producto Entregado</h3>
+                      <p className="text-xs text-[#006080] mt-1 leading-relaxed">
+                        Este producto ya fue entregado con éxito a otro iehudi de la comunidad. ¡Gracias por compartir!
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-5 max-w-sm text-center shadow-md">
+                      <AlertCircle className="mx-auto text-red-600 mb-2" size={32} />
+                      <h3 className="font-bold text-red-800 text-sm">Publicación desactivada</h3>
+                      <p className="text-xs text-red-600 mt-1 leading-relaxed">
+                        Este producto ya recibió el límite de contactos permitidos o superó las 48 horas de vigencia y fue retirado.
+                      </p>
+                      {reachedLimit && (
+                        <div className="mt-3 pt-3 border-t border-red-100 flex flex-col items-center">
+                          <p className="text-[11px] text-red-700 font-semibold mb-2">
+                            ¿Te interesa y todavía no se entregó?
+                          </p>
+                          <button
+                            onClick={handleRequestReactivation}
+                            disabled={isReactivationRequested || reactivationSending}
+                            className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-3.5 py-1.5 rounded transition disabled:bg-gray-200 disabled:text-gray-500 flex items-center gap-1.5 shadow-sm"
+                          >
+                            {reactivationSending ? (
+                              <>
+                                <Loader2 className="animate-spin" size={12} />
+                                <span>Enviando...</span>
+                              </>
+                            ) : isReactivationRequested ? (
+                              <>
+                                <Check size={12} />
+                                <span>Pedido enviado</span>
+                              </>
+                            ) : (
+                              <span>Pedir al dueño que lo reactive</span>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* Right Column: Meta details (span 5) */}
@@ -412,11 +492,13 @@ export default function ProductDetailPage() {
                     <Phone size={18} />
                   )}
                   <span>
-                    {isDeactivated 
-                      ? "Publicación inactiva" 
-                      : user?.uid === product.sellerId 
-                        ? "Ver mis datos de contacto" 
-                        : "Contactar para retirar"}
+                    {product.isDelivered
+                      ? "Producto Entregado"
+                      : isDeactivated 
+                        ? "Publicación inactiva" 
+                        : user?.uid === product.sellerId 
+                          ? "Ver mis datos de contacto" 
+                          : "Contactar para retirar"}
                   </span>
                 </button>
               )}
