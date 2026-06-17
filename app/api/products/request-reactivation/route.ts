@@ -1,33 +1,9 @@
 import { NextResponse } from 'next/server';
 // @ts-ignore
 import nodemailer from 'nodemailer';
-import { getApps, initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { adminDb } from '@/lib/firebase-admin';
 
-// Initialize firebase-admin safely
-let adminDb: any = null;
-try {
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
-
-  if (projectId && clientEmail && privateKey) {
-    if (getApps().length === 0) {
-      initializeApp({
-        credential: cert({
-          projectId,
-          clientEmail,
-          privateKey: privateKey.replace(/\\n/g, '\n'),
-        }),
-      });
-    }
-    adminDb = getFirestore();
-  } else {
-    console.warn("Firebase Admin credentials missing. Real-time Firebase database features disabled on localhost.");
-  }
-} catch (e) {
-  console.warn("Firebase Admin failed to initialize:", e);
-}
+export const dynamic = 'force-dynamic';
 
 // Nodemailer Transporter Setup
 const getTransporter = () => {
@@ -43,7 +19,7 @@ const getTransporter = () => {
   return nodemailer.createTransport({
     host,
     port,
-    secure: port === 465, // true for 465, false for other ports
+    secure: port === 465,
     auth: {
       user,
       pass,
@@ -62,58 +38,41 @@ export async function POST(request: Request) {
     const appUrl = request.headers.get("origin") || "https://mesira.net";
     const myAccountUrl = `${appUrl}/mi-cuenta`;
 
-    let product: any = null;
-    let isFirebase = false;
+    // Fetch product using the shared firebase-admin module (avoids duplicate app init)
+    const docRef = adminDb.collection("products").doc(productId);
+    const docSnap = await docRef.get();
 
-    if (adminDb) {
-      isFirebase = true;
-      const docRef = adminDb.collection("products").doc(productId);
-      const docSnap = await docRef.get();
-      
-      if (!docSnap.exists) {
-        return NextResponse.json({ error: "Producto no encontrado." }, { status: 404 });
-      }
-      
-      product = { id: docSnap.id, ...docSnap.data() };
-
-      if (product.isDelivered) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "El producto ya fue entregado y no se puede pedir reactivación." 
-        }, { status: 400 });
-      }
-
-      // If already requested, don't send email again (only once)
-      if (product.reactivationRequested) {
-        return NextResponse.json({ 
-          success: true, 
-          message: "La reactivación ya fue solicitada anteriormente.",
-          alreadyRequested: true
-        });
-      }
-
-      // Mark reactivation as requested in the DB
-      await docRef.update({ reactivationRequested: true });
-    } else {
-      // Local development simulation fallback
-      console.log(`[SIMULACIÓN] Pedido de reactivación para el producto ID: ${productId}`);
-      product = {
-        id: productId,
-        title: "Producto de Prueba (Local)",
-        sellerName: "Usuario Prueba",
-        sellerEmail: "test@example.com",
-        neighborhood: "Once",
-        isDelivered: false,
-        reactivationRequested: false
-      };
+    if (!docSnap.exists) {
+      return NextResponse.json({ error: "Producto no encontrado." }, { status: 404 });
     }
+
+    const product: any = { id: docSnap.id, ...docSnap.data() };
+
+    if (product.isDelivered) {
+      return NextResponse.json({
+        success: false,
+        message: "El producto ya fue entregado y no se puede pedir reactivación."
+      }, { status: 400 });
+    }
+
+    // If already requested, don't send email again (only once per deactivation cycle)
+    if (product.reactivationRequested) {
+      return NextResponse.json({
+        success: true,
+        message: "La reactivación ya fue solicitada anteriormente.",
+        alreadyRequested: true
+      });
+    }
+
+    // Mark reactivation as requested in the DB atomically
+    await docRef.update({ reactivationRequested: true });
 
     // Send email to the owner
     const email = product.sellerEmail;
     if (!email) {
-      return NextResponse.json({ 
-        success: true, 
-        message: "Se guardó el pedido, pero el dueño no posee email registrado para notificar." 
+      return NextResponse.json({
+        success: true,
+        message: "Se guardó el pedido, pero el dueño no posee email registrado para notificar."
       });
     }
 
@@ -175,17 +134,13 @@ Mesira Argentina - Uniendo a la comunidad para regalar y recibir.
       });
       console.log(`Email de solicitud de reactivación enviado con éxito a ${email} para el producto "${product.title}".`);
     } else {
-      console.warn("SMTP credentials are not configured. Reactivation email simulation content below:");
-      console.log(`[EMAIL SIMULADO DE REACTIVACIÓN]`);
-      console.log(`De: alertas@mesira.net`);
-      console.log(`Para: ${email}`);
-      console.log(`Asunto: ${subject}`);
-      console.log(`Contenido:\n${textContent}`);
+      console.warn("SMTP credentials are not configured. Reactivation email simulation:");
+      console.log(`[EMAIL SIMULADO] Para: ${email} | Asunto: ${subject}`);
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: "Se envió la solicitud de reactivación al dueño por email." 
+    return NextResponse.json({
+      success: true,
+      message: "Se envió la solicitud de reactivación al dueño por email."
     });
   } catch (error: any) {
     console.error("Error en la solicitud de reactivación:", error);
