@@ -612,6 +612,17 @@ export default function HomePage() {
       <div className="absolute top-[40%] left-[-10%] w-[500px] h-[500px] bg-sky-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
       <Header onOpenAuthModal={() => setIsAuthOpen(true)} />
+
+      {/* Delicate Support Message */}
+      <div className="bg-white/60 backdrop-blur-[2px] border-b border-[#e2f1f3] py-2.5 text-center text-[11px] text-[#0e2a30]/80 z-20 relative">
+        Para cualquier error o sugerencia comunicarse con{" "}
+        <a 
+          href="mailto:soporte@mesira.net" 
+          className="text-[#0891b2] hover:text-[#0e7490] font-bold hover:underline transition-colors"
+        >
+          soporte@mesira.net
+        </a>
+      </div>
       
       <main className="max-w-6xl mx-auto px-4 w-full mt-5 flex-1 flex flex-col md:flex-row gap-5 relative z-10">
         <Suspense fallback={<HomeFallback />}>
