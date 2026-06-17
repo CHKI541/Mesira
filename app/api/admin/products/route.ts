@@ -42,6 +42,7 @@ export async function POST(request: Request) {
         contactCount: 0,
         contactedUserIds: [],
         isDelivered: false,
+        reactivationRequested: false,
         deactivatedAt: null,
       });
     }

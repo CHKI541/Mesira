@@ -237,14 +237,15 @@ export default function ProductDetailPage() {
   const isDeactivated = !product.isActive;
   const neighborhoodLabel = product.neighborhood === "Otro" ? product.customNeighborhood : product.neighborhood;
 
-  // Render variables for Argentine Phone Number formatting
-  const formattedPhone = product.sellerPhone.startsWith("+54") 
-    ? product.sellerPhone 
-    : `+549${product.sellerPhone}`;
+  // Render variables for Argentine Phone Number formatting (guard against undefined sellerPhone)
+  const phone = product.sellerPhone || "";
+  const formattedPhone = phone.startsWith("+54") 
+    ? phone 
+    : `+549${phone}`;
 
-  // Direct WhatsApp link construction
+  // Direct WhatsApp link construction (use %22 for encoded double-quotes in URL)
   const rawPhone = formattedPhone.replace(/\+/g, "");
-  const waLink = `https://wa.me/${rawPhone}?text=Hola%20${encodeURIComponent(product.sellerName)},%20te%20escribo%20desde%20Mesira%20por%20tu%20publicaci%C3%B3n%20"${encodeURIComponent(product.title)}"`;
+  const waLink = `https://wa.me/${rawPhone}?text=Hola%20${encodeURIComponent(product.sellerName)},%20te%20escribo%20desde%20Mesira%20por%20tu%20publicaci%C3%B3n%20%22${encodeURIComponent(product.title)}%22`;
 
   const prefs = product.contactPreferences && product.contactPreferences.length > 0 
     ? product.contactPreferences 
@@ -300,7 +301,7 @@ export default function ProductDetailPage() {
             )}
 
             {isDeactivated && (() => {
-              const reachedLimit = product.contactCount >= (product.maxContacts || 3);
+              const reachedLimit = (product.contactCount || 0) >= (product.maxContacts || 3);
               const isReactivationRequested = product.reactivationRequested || localReactivationRequested;
               return (
                 <div className="absolute inset-0 bg-white/75 backdrop-blur-[1px] flex flex-col items-center justify-center p-4">

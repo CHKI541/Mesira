@@ -28,7 +28,8 @@ import {
   deleteProductAdmin,
   updateProductContent,
   editProductAdmin,
-  ProductEditData
+  ProductEditData,
+  parseDateToMillis
 } from "@/lib/db";
 import { 
   PlusCircle, 
@@ -1458,18 +1459,17 @@ function MiCuentaContent() {
           ) : (
             <div className="divide-y divide-gray-150">
               {myProducts.map(prod => {
-                const createdTime = typeof prod.createdAt === "number" ? prod.createdAt : new Date(prod.createdAt).getTime();
+                // Use parseDateToMillis to safely handle Firestore Timestamps, Dates, and numbers
+                const createdTime = parseDateToMillis(prod.createdAt);
                 const ageHours = (Date.now() - createdTime) / (60 * 60 * 1000);
                 
                 const limit = prod.maxContacts || 3;
-                const deactTime = prod.deactivatedAt
-                  ? (typeof prod.deactivatedAt === "number" ? prod.deactivatedAt : new Date(prod.deactivatedAt).getTime())
-                  : createdTime;
+                const deactTime = prod.deactivatedAt ? parseDateToMillis(prod.deactivatedAt) : createdTime;
                 const deactAgeHours = (Date.now() - deactTime) / (60 * 60 * 1000);
                 
-                const isExpiredActive = prod.isActive && prod.contactCount < limit && ageHours > 60 * 24;
-                const isExpiredDeactivated = (!prod.isActive || prod.contactCount >= limit) && deactAgeHours > 48;
-                const isDeactivated = !prod.isActive || prod.contactCount >= limit || isExpiredActive || isExpiredDeactivated;
+                const isExpiredActive = prod.isActive && (prod.contactCount || 0) < limit && ageHours > 60 * 24;
+                const isExpiredDeactivated = (!prod.isActive || (prod.contactCount || 0) >= limit) && deactAgeHours > 48;
+                const isDeactivated = !prod.isActive || (prod.contactCount || 0) >= limit || isExpiredActive || isExpiredDeactivated;
                 
                 const neighborhoodLabel = prod.neighborhood === "Otro" ? prod.customNeighborhood : prod.neighborhood;
 

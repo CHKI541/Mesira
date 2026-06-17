@@ -459,7 +459,9 @@ export const getSellerProducts = async (sellerId: string): Promise<Product[]> =>
     });
 
     // Filter out deactivated products older than 48 hours (based on deactivation time)
+    // Exception: products marked as 'isDelivered' are always shown (seller should always see their delivered items)
     results = results.filter(p => {
+      if (p.isDelivered) return true; // Always show delivered products in seller's dashboard
       const isDeactivated = !p.isActive || p.contactCount >= (p.maxContacts || 3);
       if (isDeactivated) {
         const deactTime = p.deactivatedAt ? parseDateToMillis(p.deactivatedAt) : parseDateToMillis(p.createdAt);
@@ -479,7 +481,9 @@ export const getSellerProducts = async (sellerId: string): Promise<Product[]> =>
     });
 
     // Filter out deactivated products older than 48 hours (based on deactivation time)
+    // Exception: products marked as 'isDelivered' are always shown (seller should always see their delivered items)
     results = results.filter(p => {
+      if (p.isDelivered) return true; // Always show delivered products in seller's dashboard
       const isDeactivated = !p.isActive || p.contactCount >= (p.maxContacts || 3);
       if (isDeactivated) {
         const deactTime = p.deactivatedAt ? parseDateToMillis(p.deactivatedAt) : parseDateToMillis(p.createdAt);
@@ -563,6 +567,7 @@ export const updateProductContent = async (
 
     await updateDoc(docRef, updates as any);
     const updated = await getDoc(docRef);
+    if (!updated.exists()) throw new Error("Publicación no encontrada tras la actualización.");
     return { ...updated.data(), id, createdAt: data.createdAt } as Product;
   } else {
     const products = getMockProducts();
@@ -699,6 +704,7 @@ export const reactivateProduct = async (id: string): Promise<Product> => {
     };
     await updateDoc(docRef, updates);
     const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) throw new Error("Product not found after reactivation.");
     const data = docSnap.data();
     return {
       ...data,
