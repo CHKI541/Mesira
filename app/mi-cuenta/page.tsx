@@ -439,7 +439,7 @@ function MiCuentaContent() {
 
     } catch (err: any) {
       console.error(err);
-      setDashboardError("Hubo un error al publicar el producto. Intentá nuevamente.");
+      setDashboardError(`Hubo un error al publicar el producto: ${err.message || "Intentá nuevamente."}`);
     } finally {
       setFormLoading(false);
     }

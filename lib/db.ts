@@ -242,7 +242,7 @@ const compressImage = async (file: File): Promise<string> => {
         let width = img.width;
         let height = img.height;
 
-        const MAX_DIM = 800;
+        const MAX_DIM = 600;
         if (width > height) {
           if (width > MAX_DIM) {
             height = Math.round((height * MAX_DIM) / width);
@@ -259,8 +259,8 @@ const compressImage = async (file: File): Promise<string> => {
         canvas.height = height;
         const ctx = canvas.getContext("2d");
         ctx?.drawImage(img, 0, 0, width, height);
-        // Compress as JPEG with 0.7 quality (typically results in ~40-70KB)
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+        // Compress as JPEG with 0.5 quality (typically results in ~15-30KB, extremely safe for Firestore 1MB limit)
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.5);
         resolve(dataUrl);
       };
       img.onerror = reject;
