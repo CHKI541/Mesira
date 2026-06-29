@@ -1,0 +1,29 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Teal diagonal loop -->
+  <path 
+    d="M22 35 L45 65 L70 35 L85 55" 
+    stroke="#00A3A3" 
+    stroke-width="8" 
+    stroke-linecap="round" 
+    stroke-linejoin="round" 
+    fill="none" 
+  />
+  <!-- Blue overlapping loop -->
+  <path 
+    d="M15 60 L15 35 L45 65 L75 35 L88 22" 
+    stroke="#002366" 
+    stroke-width="8" 
+    stroke-linecap="round" 
+    stroke-linejoin="round" 
+    fill="none" 
+  />
+  <!-- Arrow Head -->
+  <path 
+    d="M72 22 L88 22 L88 38" 
+    stroke="#002366" 
+    stroke-width="8" 
+    stroke-linecap="round" 
+    stroke-linejoin="round" 
+    fill="none" 
+  />
+</svg>
