@@ -51,6 +51,9 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<any>> = {
 };
 
 
+// Global client-side cache for instantaneous feed loading
+let cachedFeedProducts: Product[] | null = null;
+
 // Inner Home component containing search and filter logic
 function HomeContent() {
   const { user, isOnboardingCompleted, setIsOnboardingCompleted } = useAuth();
@@ -58,8 +61,20 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
+  // Parse active filters from URL
+  const searchQuery = searchParams.get("q") || "";
+  const activeCategories = searchParams.get("categorias") ? searchParams.get("categorias")!.split(",") : [];
+  const activeNeighborhoods = searchParams.get("barrios") ? searchParams.get("barrios")!.split(",") : [];
+  const activeConditions = searchParams.get("estados") ? searchParams.get("estados")!.split(",") : [];
+
+  const isFiltering = searchQuery.trim() !== "" || activeCategories.length > 0 || activeNeighborhoods.length > 0 || activeConditions.length > 0;
+
+  const [products, setProducts] = useState<Product[]>(() => {
+    return (!isFiltering && cachedFeedProducts) ? cachedFeedProducts : [];
+  });
+  const [loadingProducts, setLoadingProducts] = useState(() => {
+    return !(cachedFeedProducts && !isFiltering);
+  });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionOnboardingClosed, setSessionOnboardingClosed] = useState(false);
@@ -69,14 +84,6 @@ function HomeContent() {
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [isNeighborhoodsOpen, setIsNeighborhoodsOpen] = useState(false);
   const [isConditionsOpen, setIsConditionsOpen] = useState(false);
-
-  // Parse active filters from URL
-  const searchQuery = searchParams.get("q") || "";
-  const activeCategories = searchParams.get("categorias") ? searchParams.get("categorias")!.split(",") : [];
-  const activeNeighborhoods = searchParams.get("barrios") ? searchParams.get("barrios")!.split(",") : [];
-  const activeConditions = searchParams.get("estados") ? searchParams.get("estados")!.split(",") : [];
-
-  const isFiltering = searchQuery.trim() !== "" || activeCategories.length > 0 || activeNeighborhoods.length > 0 || activeConditions.length > 0;
 
   // Temporary local states for filter selection (applied on button click)
   const [tempCategories, setTempCategories] = useState<string[]>([]);
@@ -93,7 +100,10 @@ function HomeContent() {
   // Load products based on query & filters
   useEffect(() => {
     async function fetchFeed() {
-      setLoadingProducts(true);
+      // If we don't have cached products, set loading state to true
+      if (isFiltering || !cachedFeedProducts) {
+        setLoadingProducts(true);
+      }
       setError(null);
       try {
         const data = await getProducts({
@@ -103,6 +113,9 @@ function HomeContent() {
           conditions: activeConditions.length > 0 ? activeConditions : undefined
         });
         setProducts(data);
+        if (!isFiltering) {
+          cachedFeedProducts = data;
+        }
       } catch (err) {
         console.error("Error loading feed:", err);
         setError("Ocurrió un error al cargar las publicaciones.");

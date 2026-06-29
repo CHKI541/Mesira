@@ -300,7 +300,7 @@ export const getProducts = async (filters?: FilterOptions): Promise<Product[]> =
     let q = query(
       productsRef,
       orderBy("createdAt", "desc"),
-      limit(200)
+      limit(100)
     );
 
     const querySnapshot = await getDocs(q);
