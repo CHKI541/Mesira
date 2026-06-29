@@ -11,15 +11,18 @@ if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
     if (getApps().length === 0) {
       let privateKey = process.env.FIREBASE_PRIVATE_KEY;
       if (privateKey) {
-        // Replace escaped newline characters
-        privateKey = privateKey.replace(/\\n/g, "\n");
+        // Trim first to handle trailing spaces/newlines
+        privateKey = privateKey.trim();
         // Strip surrounding quotes if present
         if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
           privateKey = privateKey.slice(1, -1);
-        }
-        if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
+        } else if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
           privateKey = privateKey.slice(1, -1);
         }
+        // Trim again to handle potential trailing spaces/newlines inside the quotes
+        privateKey = privateKey.trim();
+        // Replace escaped newline characters
+        privateKey = privateKey.replace(/\\n/g, "\n");
       }
 
       adminApp = initializeApp({

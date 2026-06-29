@@ -874,11 +874,23 @@ export const getAdminDashboardData = async (
     });
 
     if (!res.ok) {
-      const errData = await res.json();
-      throw new Error(errData.error || "Error al cargar los datos de administración");
+      const errText = await res.text();
+      let errMsg = "Error al cargar los datos de administración";
+      try {
+        const errData = JSON.parse(errText);
+        errMsg = errData.error || errMsg;
+      } catch (e) {
+        console.warn("Could not parse error response as JSON:", errText);
+      }
+      throw new Error(errMsg);
     }
 
-    return await res.json();
+    const dataText = await res.text();
+    try {
+      return JSON.parse(dataText);
+    } catch (e) {
+      throw new Error("La respuesta del servidor no tiene un formato válido (JSON).");
+    }
   } else {
     // Mock Mode
     const products = getMockProducts();
@@ -917,11 +929,23 @@ export const deleteUserAdmin = async (
     });
 
     if (!res.ok) {
-      const errData = await res.json();
-      throw new Error(errData.error || "Error al eliminar el usuario");
+      const errText = await res.text();
+      let errMsg = "Error al eliminar el usuario";
+      try {
+        const errData = JSON.parse(errText);
+        errMsg = errData.error || errMsg;
+      } catch (e) {
+        console.warn("Could not parse error response as JSON:", errText);
+      }
+      throw new Error(errMsg);
     }
 
-    return await res.json();
+    const dataText = await res.text();
+    try {
+      return JSON.parse(dataText);
+    } catch (e) {
+      throw new Error("La respuesta del servidor no tiene un formato válido (JSON).");
+    }
   } else {
     // Mock Mode
     const users = getMockUsers();
