@@ -17,7 +17,7 @@ export function PWARegister() {
   const [fcmRegistered, setFcmRegistered] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // 1. Detect if app is running in standalone mode (installed PWA)
+  // 1. Detect if app is running in standalone mode (installed PWA) & Register Service Worker
   useEffect(() => {
     if (typeof window !== "undefined") {
       const standalone = 
@@ -31,6 +31,17 @@ export function PWARegister() {
         setPermissionStatus("unsupported");
       } else {
         setPermissionStatus(Notification.permission);
+      }
+
+      // Register PWA service worker
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("/firebase-messaging-sw.js")
+          .then((reg) => {
+            console.log("Service Worker registered successfully with scope:", reg.scope);
+          })
+          .catch((err) => {
+            console.error("Service Worker registration failed:", err);
+          });
       }
     }
   }, []);

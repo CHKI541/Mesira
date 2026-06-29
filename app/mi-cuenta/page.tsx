@@ -29,8 +29,10 @@ import {
   updateProductContent,
   editProductAdmin,
   ProductEditData,
-  parseDateToMillis
+  parseDateToMillis,
+  updateUserAlertPreference
 } from "@/lib/db";
+import { PushNotificationToggle } from "@/components/PushNotificationToggle";
 import { 
   PlusCircle, 
   FolderHeart, 
@@ -170,6 +172,7 @@ function MiCuentaContent() {
   const [alertNeighborhoods, setAlertNeighborhoods] = useState<string[]>([]);
   const [savingAlert, setSavingAlert] = useState(false);
   const [deletingAlertId, setDeletingAlertId] = useState<string | null>(null);
+  const [alertPref, setAlertPref] = useState<"all" | "custom">("custom");
 
   // Registration/Verification details in page (fallback if they bypassed the modal)
   const [regName, setRegName] = useState("");
@@ -263,6 +266,8 @@ function MiCuentaContent() {
         setProfilePhone(user.phone ? user.phone.replace("+549", "") : "");
         setProfileEmail(user.email || "");
         setProfileKehila(user.kehila || "");
+        // Load alert preference
+        setAlertPref((user as any).alertPreference === "all" ? "all" : "custom");
         // Pre-fill publication contact number (if not already modified)
         setPubPhone(prev => prev || (user.phone ? user.phone.replace("+549", "") : ""));
       }
@@ -295,6 +300,16 @@ function MiCuentaContent() {
       setProfileError(err.message || "Error al actualizar los datos.");
     } finally {
       setProfileLoading(false);
+    }
+  };
+
+  const handleToggleAlertPreference = async (pref: "all" | "custom") => {
+    if (!user) return;
+    setAlertPref(pref);
+    try {
+      await updateUserAlertPreference(user.uid, pref);
+    } catch (err) {
+      console.error("Error saving alert preference:", err);
     }
   };
 
@@ -1669,6 +1684,54 @@ function MiCuentaContent() {
               <span>Guardar cambios</span>
             </button>
           </form>
+
+          {/* Preferences and Push Toggle in profile for easy discovery */}
+          <div className="mt-8 pt-6 border-t border-gray-150 flex flex-col gap-5">
+            <PushNotificationToggle />
+
+            {/* Alert Preferences Panel */}
+            <div className="bg-gray-50/50 border border-gray-150 rounded-xl p-5 shadow-sm">
+              <h4 className="text-xs font-bold text-ml-dark uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <Bell size={14} className="text-ml-blue" />
+                <span>Preferencias de notificaciones</span>
+              </h4>
+              <p className="text-[11px] text-gray-500 mb-4 leading-relaxed">
+                Elegí qué publicaciones querés que te notifiquemos por push/email:
+              </p>
+              <div className="flex flex-col gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => handleToggleAlertPreference("all")}
+                  className={`w-full text-left p-3 rounded-lg border text-xs bg-white transition cursor-pointer ${
+                    alertPref === "all"
+                      ? "border-[#0043C6] text-[#0043C6] font-bold ring-2 ring-[#0043C6]/10"
+                      : "border-gray-200 hover:bg-gray-50 text-gray-700"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span>Recibir TODO lo que se publique</span>
+                    {alertPref === "all" && <CheckCircle size={14} />}
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1 font-medium">Te avisaremos de cada nuevo regalo publicado en la plataforma.</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleToggleAlertPreference("custom")}
+                  className={`w-full text-left p-3 rounded-lg border text-xs bg-white transition cursor-pointer ${
+                    alertPref === "custom"
+                      ? "border-[#0043C6] text-[#0043C6] font-bold ring-2 ring-[#0043C6]/10"
+                      : "border-gray-200 hover:bg-gray-50 text-gray-700"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span>Recibir SOLAMENTE mis alertas</span>
+                    {alertPref === "custom" && <CheckCircle size={14} />}
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1 font-medium">Te avisaremos únicamente cuando coincida con las alertas creadas en el panel de Alertas.</p>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
