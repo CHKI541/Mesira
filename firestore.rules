@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Admin helper function
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'israel.chueke@gmail.com';
+    }
+    
+    // User profile rules — only the owner or admin can read/write profiles
+    match /users/{userId} {
+      allow read, write: if (request.auth != null && request.auth.uid == userId) || isAdmin();
+    }
+    
+    // Product rules
+    match /products/{productId} {
+      // Allow reading products publicly
+      allow read: if true;
+      
+      // Allow creation only if the authenticated user is set as the seller
+      allow create: if request.auth != null && request.resource.data.sellerId == request.auth.uid;
+      
+      // Allow update if seller, standard contact views register, or admin
+      allow update: if isAdmin() || (
+        // Seller rule: full update rights on their own product
+        (request.auth != null && resource.data.sellerId == request.auth.uid) ||
+        
+        // Contact registration rule: only contact-tracking fields can change, and count must increase by 1
+        (request.auth != null && 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['contactCount', 'contactedUserIds', 'isActive', 'deactivatedAt']) &&
+         request.resource.data.contactCount == resource.data.contactCount + 1) ||
+         
+        // View registration rule: only authenticated users can register views
+        (request.auth != null &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewsCount', 'viewedUserIds']) &&
+         request.resource.data.viewsCount == resource.data.viewsCount + 1)
+      );
+      
+      // Allow delete if seller or admin
+      allow delete: if isAdmin() || (request.auth != null && resource.data.sellerId == request.auth.uid);
+    }
+
+    // Alert rules — users or admin can access
+    match /alerts/{alertId} {
+      allow read, delete, update: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+  }
+}

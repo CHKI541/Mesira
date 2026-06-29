@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ml-yellow: #f3fafb; /* Extremely light cyan-white for header */
+  --color-ml-blue: #0891b2; /* Refined cyan-600 (celeste/verde agua) */
+  --color-ml-blue-hover: #0e7490; /* Darker cyan-700 for hover */
+  --color-ml-gray: transparent; /* Transparent to let body gradient show */
+  --color-ml-dark: #0e2a30; /* Deep slate-cyan for text */
+  --color-ml-green: #0891b2; /* Success state cyan */
+  --color-ml-bg: transparent; /* Transparent to let body gradient show */
+  --color-ml-border: #e2f1f3; /* Refined very light cyan-border */
+}
+
+:root {
+  --background: transparent; /* Let body gradient show */
+  --foreground: #0e2a30; /* Deep slate-cyan page text */
+}
+
+body {
+  background: linear-gradient(135deg, #f7fbfc 0%, #edf8f9 50%, #e3f3f6 100%) no-repeat;
+  background-attachment: fixed;
+  color: var(--foreground);
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Custom styles for Mercado Libre look and feel */
+.ml-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--color-ml-border);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.ml-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 20px -3px rgba(8, 145, 178, 0.1), 0 4px 6px -2px rgba(8, 145, 178, 0.05);
+  border-color: rgba(8, 145, 178, 0.25);
+}
+
+/* Hide scrollbars for Google Photos style feed */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
