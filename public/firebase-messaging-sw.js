@@ -81,7 +81,9 @@ self.addEventListener('activate', (event) => {
 
 // PWA fetch interceptor: Network-first approach to ensure real-time listings are always fresh
 self.addEventListener('fetch', (event) => {
+  // Skip non-GET requests and chrome-extension requests (these cause console errors)
   if (event.request.method !== 'GET') return;
+  if (!event.request.url.startsWith('http')) return;
   
   event.respondWith(
     fetch(event.request).catch(() => {
@@ -93,22 +95,27 @@ self.addEventListener('fetch', (event) => {
 // Handle notification click to open the app or redirect to product page
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const urlToOpen = event.notification.data && event.notification.data.url 
-    ? event.notification.data.url 
+
+  // Build an absolute URL so clients.openWindow works correctly from a service worker
+  const rawUrl = event.notification.data && event.notification.data.url
+    ? event.notification.data.url
     : '/';
+  const absoluteUrl = rawUrl.startsWith('http') 
+    ? rawUrl 
+    : (self.location.origin + (rawUrl.startsWith('/') ? rawUrl : '/' + rawUrl));
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // Focus existing window if matching
+      // Focus existing window if already open on that URL
       for (let i = 0; i < windowClients.length; i++) {
         const client = windowClients[i];
-        if (client.url === urlToOpen && 'focus' in client) {
+        if (client.url === absoluteUrl && 'focus' in client) {
           return client.focus();
         }
       }
       // Or open a new tab/window
       if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
+        return clients.openWindow(absoluteUrl);
       }
     })
   );

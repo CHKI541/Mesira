@@ -98,6 +98,8 @@ export function PWARegister() {
       if (token) {
         await saveUserFCMToken(user.uid, token);
         setFcmRegistered(true);
+        // Auto-hide the success toast after 4 seconds
+        setTimeout(() => setFcmRegistered(false), 4000);
         console.log("FCM registration token successfully saved to Firestore.");
       } else {
         console.warn("No registration token available. Request permission to generate one.");
@@ -105,6 +107,8 @@ export function PWARegister() {
     } catch (err: any) {
       console.error("Error retrieving or saving FCM Web Token:", err);
       setErrorMsg("No se pudo registrar el dispositivo para alertas push.");
+      // Auto-hide error toast after 6 seconds
+      setTimeout(() => setErrorMsg(null), 6000);
     }
   };
 
@@ -144,8 +148,8 @@ export function PWARegister() {
     setShowInstallBanner(false);
   };
 
-  // Render nothing if no active prompt or permission is already configured
-  if (!showInstallBanner && !showPermissionPrompt) return null;
+  // Render nothing if no active prompt, permission is already configured, and no toast messages
+  if (!showInstallBanner && !showPermissionPrompt && !fcmRegistered && !errorMsg) return null;
 
   return (
     <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md animate-in slide-in-from-bottom duration-300">
