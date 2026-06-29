@@ -614,6 +614,8 @@ export default function HomePage() {
       <div className="absolute top-20 right-[-10%] w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute top-[40%] left-[-10%] w-[500px] h-[500px] bg-sky-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
+      <Header onOpenAuthModal={() => setIsAuthOpen(true)} />
+
       {/* Delicate Support Message */}
       <div className="bg-white/60 backdrop-blur-[2px] border-b border-[#e2f1f3] py-2.5 text-center text-[11px] text-[#0e2a30]/80 z-20 relative">
         Para cualquier error o sugerencia comunicarse con{" "}
