@@ -15,21 +15,21 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg bg-white rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-250">
+      <div className="w-full max-w-lg max-h-[92vh] bg-white rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-250 flex flex-col">
         
-        {/* Header decoration */}
-        <div className="bg-ml-yellow px-6 py-6 text-ml-dark relative">
-          <div className="inline-flex p-2 bg-white/40 rounded-lg text-ml-blue mb-2.5">
-            <Sparkles size={24} />
+        {/* Header decoration (Fixed at top) */}
+        <div className="bg-ml-yellow px-6 py-5 text-ml-dark relative shrink-0">
+          <div className="inline-flex p-2 bg-white/40 rounded-lg text-ml-blue mb-2">
+            <Sparkles size={22} />
           </div>
-          <h2 className="text-xl font-bold">¡Bienvenido a Mesira Argentina!</h2>
-          <p className="text-xs text-gray-700 mt-1">
-            Tu cuenta está activa. Conocé las reglas básicas para empezar a publicar y regalar de forma segura:
+          <h2 className="text-lg font-bold leading-tight">¡Bienvenido a Mesira Argentina!</h2>
+          <p className="text-[11px] text-gray-700 mt-0.5">
+            Tu cuenta está activa. Conocé las reglas básicas para empezar:
           </p>
         </div>
 
-        {/* Rules Grid */}
-        <div className="p-6 md:p-8 space-y-5">
+        {/* Scrollable Rules Container */}
+        <div className="p-6 md:p-8 space-y-5 overflow-y-auto flex-1">
           
           {/* Rule 1 */}
           <div className="flex gap-4">
@@ -70,28 +70,30 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
             </div>
           </div>
 
-          {/* Action footer with checkbox */}
-          <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <label className="flex items-center gap-2 text-xs font-semibold text-gray-600 cursor-pointer select-none">
-              <input 
-                type="checkbox" 
-                checked={dontShowAgain}
-                onChange={(e) => setDontShowAgain(e.target.checked)}
-                className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500/20 w-4 h-4 cursor-pointer"
-              />
-              <span>No volver a mostrar este mensaje</span>
-            </label>
+        </div>
 
-            <button
-              onClick={() => onClose(dontShowAgain)}
-              className="bg-ml-blue hover:bg-ml-blue-hover text-white px-5 py-2.5 rounded font-bold text-sm transition flex items-center gap-2 shadow-sm focus:outline-none shrink-0"
-            >
-              <span>Entendido, ¡empezar!</span>
-              <ArrowRight size={16} />
-            </button>
-          </div>
+        {/* Action footer (Fixed at bottom) */}
+        <div className="p-6 pt-4 border-t border-gray-100 bg-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shrink-0">
+          <label className="flex items-center gap-2 text-xs font-semibold text-gray-600 cursor-pointer select-none">
+            <input 
+              type="checkbox" 
+              checked={dontShowAgain}
+              onChange={(e) => setDontShowAgain(e.target.checked)}
+              className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500/20 w-4 h-4 cursor-pointer"
+            />
+            <span>No volver a mostrar este mensaje</span>
+          </label>
+
+          <button
+            onClick={() => onClose(dontShowAgain)}
+            className="bg-ml-blue hover:bg-ml-blue-hover text-white px-5 py-2.5 rounded font-bold text-sm transition flex items-center justify-center gap-2 shadow-sm focus:outline-none shrink-0 cursor-pointer w-full sm:w-auto"
+          >
+            <span>Entendido, ¡empezar!</span>
+            <ArrowRight size={16} />
+          </button>
         </div>
       </div>
     </div>
+  );
   );
 };
