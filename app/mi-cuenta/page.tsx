@@ -172,7 +172,7 @@ function MiCuentaContent() {
   const [alertNeighborhoods, setAlertNeighborhoods] = useState<string[]>([]);
   const [savingAlert, setSavingAlert] = useState(false);
   const [deletingAlertId, setDeletingAlertId] = useState<string | null>(null);
-  const [alertPref, setAlertPref] = useState<"all" | "custom">("custom");
+  const [alertPref, setAlertPref] = useState<"all" | "custom">("all");
 
   // Registration/Verification details in page (fallback if they bypassed the modal)
   const [regName, setRegName] = useState("");
@@ -266,8 +266,8 @@ function MiCuentaContent() {
         setProfilePhone(user.phone ? user.phone.replace("+549", "") : "");
         setProfileEmail(user.email || "");
         setProfileKehila(user.kehila || "");
-        // Load alert preference
-        setAlertPref((user as any).alertPreference === "all" ? "all" : "custom");
+        // Load alert preference (default to "all" if not set)
+        setAlertPref((user as any).alertPreference === "custom" ? "custom" : "all");
         // Pre-fill publication contact number (if not already modified)
         setPubPhone(prev => prev || (user.phone ? user.phone.replace("+549", "") : ""));
       }
