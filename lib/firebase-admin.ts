@@ -27,10 +27,18 @@ if (getApps().length === 0) {
         initError = "Variables de entorno de Firebase Admin no configuradas (FIREBASE_SERVICE_ACCOUNT_KEY o FIREBASE_PRIVATE_KEY / FIREBASE_CLIENT_EMAIL).";
         console.error("Firebase admin init skipped:", initError);
       } else {
-        // Clean up the private key
+        // Trim first to handle trailing spaces/newlines
+        privateKey = privateKey.trim();
+        // Clean up the private key / strip quotes
         if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
-          try { privateKey = JSON.parse(privateKey) as string; } catch { /* ignore */ }
+          try { privateKey = JSON.parse(privateKey) as string; } catch { 
+            privateKey = privateKey.slice(1, -1);
+          }
+        } else if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
+          privateKey = privateKey.slice(1, -1);
         }
+        // Trim again to handle potential trailing spaces/newlines inside quotes
+        privateKey = privateKey.trim();
         privateKey = privateKey.replace(/\\n/g, "\n");
 
         adminApp = initializeApp({

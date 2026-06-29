@@ -506,15 +506,18 @@ function HomeContent() {
         )}
 
         {loadingProducts ? (
-          <div className="space-y-8">
+          <div className="space-y-8 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2 text-xs font-bold text-gray-500 bg-white border border-ml-border px-4 py-3 rounded-xl shadow-sm w-fit select-none">
+              <Loader2 className="animate-spin text-[#0043C6]" size={16} />
+              <span>Cargando publicaciones recientes...</span>
+            </div>
             <div>
-              <div className="h-6 w-24 bg-gray-200 animate-pulse rounded mb-4"></div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="bg-white rounded-lg border border-ml-border p-3 space-y-3">
-                    <div className="aspect-square bg-gray-150 animate-pulse rounded"></div>
-                    <div className="h-4 w-3/4 bg-gray-100 animate-pulse rounded"></div>
-                    <div className="h-3 w-1/2 bg-gray-100 animate-pulse rounded"></div>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                  <div key={i} className="bg-white rounded-lg border border-ml-border p-3 space-y-3 shadow-sm">
+                    <div className="aspect-square bg-gray-100 animate-pulse rounded-lg"></div>
+                    <div className="h-3 w-3/4 bg-gray-100/80 animate-pulse rounded"></div>
+                    <div className="h-3 w-1/2 bg-gray-100/50 animate-pulse rounded"></div>
                   </div>
                 ))}
               </div>
@@ -610,8 +613,6 @@ export default function HomePage() {
       {/* Decorative ambient background blur blobs */}
       <div className="absolute top-20 right-[-10%] w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute top-[40%] left-[-10%] w-[500px] h-[500px] bg-sky-500/5 rounded-full blur-3xl pointer-events-none"></div>
-
-      <Header onOpenAuthModal={() => setIsAuthOpen(true)} />
 
       {/* Delicate Support Message */}
       <div className="bg-white/60 backdrop-blur-[2px] border-b border-[#e2f1f3] py-2.5 text-center text-[11px] text-[#0e2a30]/80 z-20 relative">

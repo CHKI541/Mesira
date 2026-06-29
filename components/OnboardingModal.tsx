@@ -15,7 +15,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg bg-white rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-250">
+      <div className="w-full max-w-lg max-h-[90vh] bg-white rounded-lg shadow-xl overflow-y-auto animate-in fade-in zoom-in-95 duration-250">
         
         {/* Header decoration */}
         <div className="bg-ml-yellow px-6 py-6 text-ml-dark relative">
@@ -84,7 +84,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
 
             <button
               onClick={() => onClose(dontShowAgain)}
-              className="bg-ml-blue hover:bg-ml-blue-hover text-white px-5 py-2.5 rounded font-bold text-sm transition flex items-center gap-2 shadow-sm focus:outline-none shrink-0"
+              className="bg-ml-blue hover:bg-ml-blue-hover text-white px-5 py-2.5 rounded font-bold text-sm transition flex items-center justify-center gap-2 shadow-sm focus:outline-none shrink-0 cursor-pointer w-full sm:w-auto"
             >
               <span>Entendido, ¡empezar!</span>
               <ArrowRight size={16} />

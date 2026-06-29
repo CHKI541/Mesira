@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Mesira</string>
+    <string name="title_activity_main">Mesira</string>
+    <string name="package_name">net.mesira.app</string>
+    <string name="custom_url_scheme">net.mesira.app</string>
+    <string name="server_client_id">67846483216-nuprff4bu2e0u0ia0a8rel2536pu78tj.apps.googleusercontent.com</string>
+</resources>

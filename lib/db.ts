@@ -14,7 +14,8 @@ import {
   Timestamp,
   increment,
   runTransaction,
-  arrayUnion
+  arrayUnion,
+  arrayRemove
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage, isFirebaseConfigured } from "./firebase";
@@ -57,6 +58,8 @@ export interface UserProfile {
   kehila: string;
   isPhoneVerified: boolean;
   disabled?: boolean;
+  alertPreference?: "all" | "custom";
+  fcmTokens?: string[];
   createdAt: any;
 }
 
@@ -1153,6 +1156,36 @@ export const editProductAdmin = async (
     }
   }
 };
+
+// --- FCM & PWA PUSH NOTIFICATION HELPERS ---
+
+export const saveUserFCMToken = async (userId: string, token: string): Promise<void> => {
+  if (isFirebaseConfigured) {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, {
+      fcmTokens: arrayUnion(token)
+    });
+  }
+};
+
+export const removeUserFCMToken = async (userId: string, token: string): Promise<void> => {
+  if (isFirebaseConfigured) {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, {
+      fcmTokens: arrayRemove(token)
+    });
+  }
+};
+
+export const updateUserAlertPreference = async (userId: string, preference: "all" | "custom"): Promise<void> => {
+  if (isFirebaseConfigured) {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, {
+      alertPreference: preference
+    });
+  }
+};
+
 
 
 

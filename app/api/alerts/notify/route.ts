@@ -2,22 +2,36 @@ import { NextResponse } from 'next/server';
 // @ts-ignore
 import nodemailer from 'nodemailer';
 import { getApps, initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getMessaging } from 'firebase-admin/messaging';
 
 // Initialize firebase-admin safely
 let adminDb: any = null;
 try {
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  let privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
   if (projectId && clientEmail && privateKey) {
+    // Trim first to handle trailing spaces/newlines
+    privateKey = privateKey.trim();
+    // Strip surrounding quotes if present
+    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+      privateKey = privateKey.slice(1, -1);
+    } else if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
+      privateKey = privateKey.slice(1, -1);
+    }
+    // Trim again to handle potential trailing spaces/newlines inside the quotes
+    privateKey = privateKey.trim();
+    // Replace escaped newlines
+    privateKey = privateKey.replace(/\\n/g, '\n');
+
     if (getApps().length === 0) {
       initializeApp({
         credential: cert({
           projectId,
           clientEmail,
-          privateKey: privateKey.replace(/\\n/g, '\n'),
+          privateKey,
         }),
       });
     }
@@ -142,34 +156,169 @@ export async function POST(request: Request) {
 
     // Process alerts
     const matches = alertsToProcess.filter(alert => checkAlertMatchesProduct(alert, productToNotify));
+    const conditionLabelMap: Record<string, string> = {
+      perfecto: "Perfecto estado",
+      buen: "Buen estado",
+      funcional: "Estado funcional (con detalles)",
+      reparar: "A reparar / Mal estado"
+    };
+    const conditionLabel = conditionLabelMap[productToNotify.condition] || productToNotify.condition;
+    const neighborhoodLabel = productToNotify.neighborhood === "Otro" ? productToNotify.customNeighborhood : productToNotify.neighborhood;
 
-    if (matches.length === 0) {
-      return NextResponse.json({ success: true, message: "No matching alerts found.", sentCount: 0 });
+    // --- PUSH NOTIFICATIONS FLOW ---
+    let pushSentCount = 0;
+    let pushUsers: any[] = [];
+
+    if (adminDb && !mockProduct) {
+      try {
+        // Fetch all users with registered FCM tokens
+        const usersSnap = await adminDb.collection('users').where('fcmTokens', '!=', null).get();
+        usersSnap.forEach((doc: any) => {
+          const data = doc.data();
+          if (data.fcmTokens && data.fcmTokens.length > 0) {
+            pushUsers.push({ id: doc.id, ...data });
+          }
+        });
+
+        // 1. Collect tokens for users who want to receive EVERYTHING (alertPreference == 'all' or default)
+        const tokensAll: string[] = [];
+        pushUsers.forEach((u) => {
+          const pref = u.alertPreference || "all";
+          // Make sure not to notify the seller of their own product
+          if (pref === "all" && u.id !== productToNotify.sellerId) {
+            tokensAll.push(...u.fcmTokens);
+          }
+        });
+
+        // 2. Collect tokens for users who only want CUSTOM alerts matching this product
+        const tokensCustom: string[] = [];
+        const customAlertUsers = pushUsers.filter(u => u.alertPreference === "custom");
+        
+        matches.forEach((alert) => {
+          // If alert is configured to notify by push (default true)
+          if (alert.notifyByPush !== false && alert.userId !== productToNotify.sellerId) {
+            const userObj = customAlertUsers.find(u => u.id === alert.userId);
+            if (userObj && userObj.fcmTokens) {
+              tokensCustom.push(...userObj.fcmTokens);
+            }
+          }
+        });
+
+        // Remove duplicates from lists just in case
+        const uniqueTokensAll = Array.from(new Set(tokensAll));
+        const uniqueTokensCustom = Array.from(new Set(tokensCustom));
+
+        // Helper to multicast push messages (chunked in batches of 500 - FCM limit)
+        const FCM_BATCH_LIMIT = 500;
+        const sendMulticastPush = async (tokensList: string[], title: string, body: string) => {
+          if (tokensList.length === 0) return;
+          
+          // Chunk tokens into batches of 500 (FCM sendEachForMulticast limit)
+          const chunks: string[][] = [];
+          for (let i = 0; i < tokensList.length; i += FCM_BATCH_LIMIT) {
+            chunks.push(tokensList.slice(i, i + FCM_BATCH_LIMIT));
+          }
+          
+          for (const chunk of chunks) {
+            try {
+              const response = await getMessaging().sendEachForMulticast({
+                tokens: chunk,
+                notification: { title, body },
+                data: {
+                  url: `${appUrl}/producto/${productToNotify.id}`
+                }
+              });
+
+              pushSentCount += response.successCount;
+
+              // Self-cleaning: Remove expired/invalid tokens from Firestore
+              const tokensToRemove: Record<string, string[]> = {};
+              response.responses.forEach((resp, idx) => {
+                if (!resp.success) {
+                  const badToken = chunk[idx];
+                  const error = resp.error;
+                  console.log(`FCM send failed for token (Code: ${error?.code}): ${error?.message}`);
+
+                  if (
+                    error?.code === 'messaging/invalid-registration-token' ||
+                    error?.code === 'messaging/registration-token-not-registered'
+                  ) {
+                    // Find owner user
+                    const owner = pushUsers.find(u => u.fcmTokens?.includes(badToken));
+                    if (owner) {
+                      if (!tokensToRemove[owner.id]) {
+                        tokensToRemove[owner.id] = [];
+                      }
+                      tokensToRemove[owner.id].push(badToken);
+                    }
+                  }
+                }
+              });
+
+              // Update user profiles in batch
+              for (const [uid, badTokens] of Object.entries(tokensToRemove)) {
+                try {
+                  await adminDb.collection('users').doc(uid).update({
+                    fcmTokens: FieldValue.arrayRemove(...badTokens)
+                  });
+                  console.log(`Pruned ${badTokens.length} inactive FCM tokens for user: ${uid}`);
+                } catch (pruneErr) {
+                  console.error(`Failed to prune tokens for user ${uid}:`, pruneErr);
+                }
+              }
+            } catch (fcmErr) {
+              console.error("FCM send error:", fcmErr);
+            }
+          }
+        };
+
+
+        // Send push notifications
+        await sendMulticastPush(
+          uniqueTokensAll, 
+          "¡Nuevo regalo publicado!", 
+          `${productToNotify.title} en ${neighborhoodLabel}`
+        );
+
+        await sendMulticastPush(
+          uniqueTokensCustom, 
+          "¡Coincidencia con tu alerta!", 
+          `Se publicó: ${productToNotify.title} en ${neighborhoodLabel}`
+        );
+
+      } catch (pushErr) {
+        console.error("Error running push notification dispatcher: ", pushErr);
+      }
+    }
+
+    // --- EMAIL NOTIFICATIONS FLOW ---
+    // Only send email notifications to alerts that have notifyByEmail enabled (default: true)
+    const emailMatches = matches.filter(alert => alert.notifyByEmail !== false);
+
+    if (emailMatches.length === 0) {
+      return NextResponse.json({ 
+        success: true, 
+        message: `Alert processed. Push notifications sent to ${pushSentCount} devices. No email matches.`, 
+        sentCount: 0,
+        pushSentCount
+      });
     }
 
     const transporter = getTransporter();
     if (!transporter) {
-      console.warn("SMTP configuration is missing (SMTP_USER/SMTP_PASS). Email alerts will NOT be sent. Logged matches:", matches.map(m => m.userEmail));
+      console.warn("SMTP configuration is missing (SMTP_USER/SMTP_PASS). Email alerts will NOT be sent. Logged matches:", emailMatches.map(m => m.userEmail));
       return NextResponse.json({ 
         success: true, 
-        message: "SMTP is not configured. Email notifications skipped, but matches were logged.", 
-        matches: matches.map(m => ({ email: m.userEmail, alertId: m.id })),
-        sentCount: 0
+        message: `SMTP is not configured. Email notifications skipped. Push sent to ${pushSentCount} devices.`, 
+        matches: emailMatches.map(m => ({ email: m.userEmail, alertId: m.id })),
+        sentCount: 0,
+        pushSentCount
       });
     }
 
-    const emailPromises = matches.map(async (alert) => {
+    const emailPromises = emailMatches.map(async (alert) => {
       const email = alert.userEmail;
       const productUrl = `${appUrl}/producto/${productToNotify.id}`;
-      
-      const conditionLabelMap: Record<string, string> = {
-        perfecto: "Perfecto estado",
-        buen: "Buen estado",
-        funcional: "Estado funcional (con detalles)",
-        reparar: "A reparar / Mal estado"
-      };
-      const conditionLabel = conditionLabelMap[productToNotify.condition] || productToNotify.condition;
-      const neighborhoodLabel = productToNotify.neighborhood === "Otro" ? productToNotify.customNeighborhood : productToNotify.neighborhood;
 
       const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
@@ -220,8 +369,9 @@ Recibiste este correo porque tenés activa una alerta en Mesira Argentina. Podé
 
     return NextResponse.json({ 
       success: true, 
-      message: `Emails sent successfully to ${matches.length} matching users.`, 
-      sentCount: matches.length 
+      message: `Emails sent successfully to ${emailMatches.length} matching users. Push sent to ${pushSentCount} devices.`, 
+      sentCount: emailMatches.length,
+      pushSentCount
     });
   } catch (error: any) {
     console.error("Error in alerts notification endpoint:", error);
