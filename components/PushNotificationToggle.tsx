@@ -53,7 +53,19 @@ export function PushNotificationToggle() {
             setLoading(false);
             return;
           }
-          const token = await getToken(messaging, { vapidKey });
+          // Bind token to the specific firebase-messaging-sw.js SW
+          let swReg: ServiceWorkerRegistration | undefined;
+          if ("serviceWorker" in navigator) {
+            try {
+              swReg = await navigator.serviceWorker.getRegistration("/firebase-messaging-sw.js");
+              if (!swReg) {
+                swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+              }
+            } catch (swErr) {
+              console.warn("SW lookup failed:", swErr);
+            }
+          }
+          const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: swReg });
           if (token) {
             await saveUserFCMToken(user.uid, token);
             setStatusText("¡Notificaciones activadas correctamente!");

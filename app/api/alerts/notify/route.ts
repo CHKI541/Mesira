@@ -219,13 +219,45 @@ export async function POST(request: Request) {
             chunks.push(tokensList.slice(i, i + FCM_BATCH_LIMIT));
           }
           
+          const productUrl = `${appUrl}/producto/${productToNotify.id}`;
+          const absoluteIconUrl = `https://mesira.net/icon-192.png`;
+
           for (const chunk of chunks) {
             try {
               const response = await getMessaging().sendEachForMulticast({
                 tokens: chunk,
-                notification: { title, body },
+                // data-only at top level so SW onBackgroundMessage always fires
                 data: {
-                  url: `${appUrl}/producto/${productToNotify.id}`
+                  title,
+                  body,
+                  url: productUrl
+                },
+                // Web push (PWA) specific config
+                webpush: {
+                  notification: {
+                    title,
+                    body,
+                    icon: absoluteIconUrl,
+                    badge: absoluteIconUrl,
+                    requireInteraction: false,
+                    data: { url: productUrl }
+                  },
+                  fcmOptions: {
+                    // Tells the browser to open this URL when notification is tapped
+                    link: productUrl
+                  }
+                },
+                // Native Android (Capacitor app) config
+                android: {
+                  notification: {
+                    title,
+                    body,
+                    icon: 'ic_launcher',
+                    clickAction: 'FLUTTER_NOTIFICATION_CLICK',
+                    defaultSound: true,
+                    defaultVibrateTimings: true,
+                  },
+                  data: { url: productUrl }
                 }
               });
 

@@ -22,21 +22,38 @@ firebase.initializeApp(getFirebaseConfig());
 
 const messaging = firebase.messaging();
 
-// Handle background messaging
+// Handle background messaging (app closed or in background)
+// Fires for data-only messages; for notification+data, webpush.notification handles display
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
   
-  const notificationTitle = payload.data?.title || payload.notification?.title || "Mesira Argentina";
+  // Extract from data (our primary source) or fallback to notification object
+  const notificationTitle = 
+    payload.data?.title || 
+    payload.notification?.title || 
+    "Mesira Argentina";
+  
+  const notificationBody = 
+    payload.data?.body || 
+    payload.notification?.body || 
+    "Nueva publicación de tu interés";
+
+  const notificationUrl = 
+    payload.data?.url || 
+    payload.notification?.data?.url || 
+    '/';
+
   const notificationOptions = {
-    body: payload.data?.body || payload.notification?.body || "Nueva publicación de tu interés",
+    body: notificationBody,
     icon: '/icon-192.png',
     badge: '/icon-192.png',
-    data: {
-      url: payload.data?.url || '/'
-    }
+    vibrate: [200, 100, 200],
+    requireInteraction: false,
+    data: { url: notificationUrl },
+    tag: 'mesira-notification' // Prevents duplicate notifications
   };
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
 // Accept Firebase config message from the main app thread (optional future enhancement)

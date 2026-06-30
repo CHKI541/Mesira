@@ -104,8 +104,26 @@ export function PWARegister() {
         return;
       }
 
-      // Get token from FCM Web SDK using VAPID key
-      const token = await getToken(messaging, { vapidKey });
+      // Get the specific SW registration to ensure we bind the token to the correct SW
+      let swRegistration: ServiceWorkerRegistration | undefined;
+      if ("serviceWorker" in navigator) {
+        try {
+          swRegistration = await navigator.serviceWorker.getRegistration("/firebase-messaging-sw.js");
+          if (!swRegistration) {
+            // Register it if not found
+            swRegistration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+            await swRegistration.update();
+          }
+        } catch (swErr) {
+          console.warn("Could not get SW registration, proceeding without it:", swErr);
+        }
+      }
+
+      // Get token from FCM Web SDK using VAPID key + explicit SW registration
+      const token = await getToken(messaging, { 
+        vapidKey,
+        serviceWorkerRegistration: swRegistration
+      });
       if (token) {
         await saveUserFCMToken(user.uid, token);
         setFcmRegistered(true);
